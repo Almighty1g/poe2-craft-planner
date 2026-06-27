@@ -1,0 +1,1237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PoE2 Craft Planner — currency & omen recipe builder (0.5.x)</title>
+<style>
+  :root{
+    --bg:#0e0b07; --panel:#171109; --panel2:#1f1710; --line:#3a2c18;
+    --gold:#c9a24b; --gold2:#e6c878; --txt:#e8e0cf; --muted:#9a8d72;
+    --green:#7ec46b; --red:#d4694f; --blue:#6fa8d6; --purple:#b07fd0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 600px at 50% -10%,#22180c 0%,var(--bg) 60%);
+    color:var(--txt);font:15px/1.5 "Segoe UI",system-ui,sans-serif;padding:24px}
+  .wrap{max-width:1080px;margin:0 auto}
+  h1{font-size:26px;margin:0 0 2px;color:var(--gold2);letter-spacing:.3px}
+  h1 span{font-size:13px;color:var(--muted);font-weight:400;letter-spacing:0}
+  .sub{color:var(--muted);margin:0 0 20px;font-size:13.5px}
+  .panel{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);
+    border-radius:12px;padding:18px;margin-bottom:18px}
+  label.lbl{display:block;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--gold);margin-bottom:8px}
+  select,button{font:inherit}
+  select{background:#120d07;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%}
+  .search{background:#120d07;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:10px 12px;
+    width:100%;margin-top:10px;font-size:14px}
+  .search:focus{outline:none;border-color:var(--gold)}
+  .search::placeholder{color:var(--muted)}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+  @media(max-width:720px){.cols{grid-template-columns:1fr}}
+  .modcol h3{margin:0 0 10px;font-size:14px;color:var(--gold2);border-bottom:1px solid var(--line);padding-bottom:6px}
+  .mod{display:flex;align-items:flex-start;gap:9px;padding:7px 8px;border-radius:7px;cursor:pointer}
+  .mod:hover{background:#221910}
+  .mod input{margin-top:3px}
+  .mod .mt{font-weight:600;cursor:pointer}
+  .mod .mv{color:var(--muted);font-size:12.5px}
+  .modbody{display:flex;flex-direction:column;gap:4px;min-width:0}
+  select.tiersel{background:#120d07;color:var(--gold2);border:1px solid var(--line);border-radius:6px;
+    padding:3px 6px;font-size:11.5px;max-width:100%}
+  .finishrow{display:flex;gap:6px;flex-wrap:wrap}
+  select.rolesel{background:#120d07;color:var(--txt);border:1px solid var(--line);border-radius:6px;
+    padding:3px 6px;font-size:11.5px}
+  .badge-keep{color:var(--green)} .badge-junk{color:var(--red)}
+  .pill{display:inline-block;font-size:10.5px;color:#0e0b07;background:var(--gold);border-radius:20px;padding:1px 7px;margin-left:6px;vertical-align:middle}
+  .btn{background:linear-gradient(180deg,var(--gold2),var(--gold));color:#1a1206;border:none;border-radius:9px;
+    padding:13px 18px;font-weight:700;cursor:pointer;letter-spacing:.3px}
+  .btn:hover{filter:brightness(1.07)}
+  .btn.sm{padding:7px 12px;font-size:13px}
+  .btn.ghost{background:#1a130a;color:var(--gold2);border:1px solid var(--line)}
+  .savebar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .savebar .search{flex:1;min-width:140px;margin-top:0}
+  .savebar select{width:auto;flex:1;min-width:150px}
+  .sharebar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;
+    padding-bottom:12px;border-bottom:1px solid var(--line)}
+  .copymsg{color:var(--green);font-size:13px}
+  .shoplist{margin-top:18px;background:#140f08;border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .shoplist h4{margin:0 0 10px;color:var(--gold2);font-size:15px}
+  .shopitem{display:flex;align-items:center;gap:9px;padding:5px 4px;font-size:14px;cursor:pointer;border-radius:6px}
+  .shopitem:hover{background:#1f1710}
+  .shopitem input:checked ~ span{opacity:.5;text-decoration:line-through}
+  .shopitem .qty{color:var(--gold2);font-weight:700;min-width:42px}
+  .shopitem .price{margin-left:auto;color:var(--green);font-size:13px;white-space:nowrap}
+  .shopitem .price.na{color:var(--muted)}
+  .shoptotal{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:15px;color:var(--gold2)}
+  .shoptotal b{font-size:18px}
+  .desblock{margin-top:18px;background:#130d1c;border:1px solid #3a2c52;border-left:3px solid #8a6fd6;border-radius:10px;padding:14px 16px}
+  .desblock h3{margin:0 0 8px;color:#c3a7ff;font-size:16px}
+  .dessteps{margin:6px 0 10px;padding-left:20px}
+  .dessteps li{margin:5px 0;font-size:13.5px;color:var(--txt)}
+  .destargets{margin:4px 0 10px;padding-left:20px}
+  .destargets li{margin:5px 0;font-size:13.5px;color:var(--txt)}
+  .despill{display:inline-block;font-size:10px;color:#e9dcff;background:#6a4bb3;border-radius:20px;padding:1px 7px;margin-left:6px;vertical-align:middle}
+  .mod.desmod{border-left:2px solid #6a4bb3}
+  .refwrap{grid-column:1 / -1}
+  .refsec{margin-bottom:16px}
+  .refsec h3{margin:0 0 6px;color:var(--gold2);font-size:15px}
+  .refwrap table{width:100%;border-collapse:collapse;font-size:13px}
+  .refwrap td{padding:6px 8px;border-top:1px solid var(--line);color:var(--muted);vertical-align:top}
+  .refwrap td.rn{color:var(--txt);width:40%}
+  .refwrap .price{color:var(--green)}
+  .step .num{cursor:pointer;user-select:none} .step .num:hover{box-shadow:0 0 0 2px var(--gold) inset}
+  .step.done{opacity:.5} .step.done h4{text-decoration:line-through}
+  .step.done .num::after{content:"✓"}
+  .simbox{margin-top:16px;background:#0c1410;border:1px solid #20402f;border-left:3px solid var(--green);border-radius:10px;padding:14px 16px}
+  .simbox h4{margin:0 0 10px;color:#9fe089;font-size:15px}
+  .simgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  @media(max-width:620px){.simgrid{grid-template-columns:1fr 1fr}}
+  .simstat{background:#101a14;border:1px solid #20402f;border-radius:8px;padding:10px 12px;text-align:center}
+  .simstat b{display:block;color:#bdeead;font-size:18px} .simstat span{color:var(--muted);font-size:11.5px}
+  .simstat.hl{border-color:var(--green);background:#13241a}
+  #updbar{background:#16140a;border:1px solid var(--gold);border-radius:10px;padding:10px 14px;margin-bottom:14px;
+    display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13.5px}
+  #updbar b{color:var(--gold2)} #updbar a{cursor:pointer;text-decoration:underline}
+  #updbar .x{margin-left:auto;cursor:pointer;color:var(--muted)}
+  .desref table{width:100%;border-collapse:collapse;font-size:12.5px}
+  .desref td{padding:5px 8px;border-top:1px solid var(--line);color:var(--muted);vertical-align:middle}
+  .desref tr.hl td{background:#1d1430;color:var(--txt)}
+  .desref td:first-child{white-space:nowrap;color:var(--txt)}
+  .pricebar select{flex:0 1 auto;min-width:120px}
+  #pricestatus{font-size:12.5px}
+  .tabs{display:flex;gap:8px;margin-bottom:16px}
+  .tab{flex:1;text-align:center;padding:11px 14px;border:1px solid var(--line);border-radius:10px;
+    background:#140f08;color:var(--muted);cursor:pointer;font-weight:600;font-size:14px}
+  .tab:hover{color:var(--txt)}
+  .tab.active{background:linear-gradient(180deg,#2a1f10,#1c1409);color:var(--gold2);border-color:var(--gold)}
+  .t1tag{display:inline-block;font-size:11.5px;color:var(--gold2);background:#241a0d;border:1px solid var(--line);
+    border-radius:6px;padding:3px 8px;max-width:100%}
+  .banner{background:#1c130a;border:1px solid var(--gold);border-left:4px solid var(--gold);border-radius:10px;
+    padding:12px 14px;margin-bottom:14px;font-size:13.5px;color:var(--txt)}
+  .banner b{color:var(--gold2)}
+  .warn{color:var(--red);font-size:13px;margin-top:10px;min-height:18px}
+  /* steps */
+  .step{display:flex;gap:14px;padding:14px 0;border-bottom:1px dashed var(--line)}
+  .step:last-child{border-bottom:none}
+  .num{flex:0 0 34px;height:34px;border-radius:50%;background:#241a0d;border:1px solid var(--gold);
+    color:var(--gold2);display:flex;align-items:center;justify-content:center;font-weight:700}
+  .step h4{margin:2px 0 5px;font-size:16px;color:var(--gold2)}
+  .step p{margin:0 0 6px}
+  .step .why{color:var(--muted);font-size:13px}
+  .tagline{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .chip{font-size:11px;background:#241a0d;border:1px solid var(--line);border-radius:20px;padding:2px 9px;color:var(--gold2);position:relative}
+  .chip[data-tip]{cursor:help;border-bottom:1px dotted var(--gold)}
+  .chip[data-tip]:hover::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 9px);
+    transform:translateX(-50%);background:#0b0805;color:var(--txt);border:1px solid var(--gold);
+    padding:8px 11px;border-radius:8px;font-size:12px;font-weight:400;line-height:1.45;width:max-content;
+    max-width:250px;white-space:normal;box-shadow:0 8px 22px rgba(0,0,0,.55);z-index:60;pointer-events:none}
+  .chip[data-tip]:hover::before{content:"";position:absolute;left:50%;bottom:calc(100% + 3px);
+    transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--gold);z-index:60;pointer-events:none}
+  .summary{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px}
+  @media(max-width:720px){.summary{grid-template-columns:1fr}}
+  .stat{background:#120d07;border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .stat b{display:block;color:var(--gold2);font-size:22px}
+  .stat span{color:var(--muted);font-size:12px}
+  .legend{font-size:12.5px;color:var(--muted)}
+  .legend b{color:var(--gold2)}
+  a{color:var(--gold2)}
+  .note{font-size:12.5px;color:var(--muted);background:#140f08;border:1px solid var(--line);border-left:3px solid var(--gold);
+    border-radius:8px;padding:10px 12px;margin-top:14px}
+  code{background:#241a0d;padding:1px 5px;border-radius:4px;color:var(--gold2);font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔨 PoE2 Craft Planner <span>· patch 0.5.x · currency &amp; omen recipe builder</span></h1>
+  <p class="sub">Pick a base, check the prefixes &amp; suffixes you want on the finished item, and get the step-by-step
+    orb&nbsp;+&nbsp;omen sequence to craft it — with the reasoning, rough odds, and a cost estimate.</p>
+
+  <div id="updbar" style="display:none"></div>
+  <div class="tabs">
+    <div class="tab active" id="tab-custom">🎯 Custom Craft</div>
+    <div class="tab" id="tab-perfect">💎 Perfect Craft · all&nbsp;T1</div>
+    <div class="tab" id="tab-finish">🔍 Finish My Item</div>
+    <div class="tab" id="tab-jewel">💎 Jewels</div>
+    <div class="tab" id="tab-ref">📖 Currency &amp; Omens</div>
+  </div>
+
+  <div class="panel">
+    <label class="lbl" for="base">1 · Choose a base type</label>
+    <select id="base"></select>
+    <input id="modsearch" class="search" placeholder="🔎 Filter mods…  (e.g. life, fire, resist, crit)" autocomplete="off" spellcheck="false">
+    <div id="pasterow"><button class="btn sm ghost" id="pasteitembtn">📋 Paste an item</button></div>
+    <div id="pastebox" style="display:none">
+      <textarea id="pasteitem" class="search" style="min-height:96px;font-family:ui-monospace,Consolas,monospace;font-size:12.5px" placeholder="Ctrl+C an item in-game, then paste its full text here — it'll auto-select the matching mods (and their tiers)…"></textarea>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+        <button class="btn sm" id="pasteimport">Match mods →</button>
+        <span id="pastemsg" style="color:var(--muted);font-size:13px"></span>
+      </div>
+    </div>
+    <div class="cols" id="modcols"></div>
+    <div class="warn" id="warn"></div>
+    <div style="margin-top:16px"><button class="btn" id="go">Generate crafting plan →</button></div>
+    <div class="savebar">
+      <input id="craftname" class="search" placeholder="name to save this craft…" autocomplete="off">
+      <button class="btn sm" id="savecraft">💾 Save</button>
+      <select id="savedlist"><option value="">⤓ Saved crafts…</option></select>
+      <button class="btn sm ghost" id="loadcraft">Load</button>
+      <button class="btn sm ghost" id="delcraft">Delete</button>
+    </div>
+    <div class="savebar">
+      <input id="importbox" class="search" placeholder="paste a shared craft code to import…" autocomplete="off">
+      <button class="btn sm ghost" id="importbtn">📥 Import code</button>
+    </div>
+    <div class="savebar pricebar">
+      <span style="color:var(--muted);font-size:13px">💰 Live prices:</span>
+      <select id="leaguesel" title="your league">
+        <option value="Runes of Aldur">Runes of Aldur</option>
+        <option value="HC Runes of Aldur">HC Runes of Aldur</option>
+        <option value="Standard">Standard</option>
+      </select>
+      <select id="curdisplay" title="show costs in">
+        <option value="exalted">in Exalted</option>
+        <option value="divine">in Divine</option>
+        <option value="chaos">in Chaos</option>
+      </select>
+      <button class="btn sm ghost" id="getprices">🔄 Get prices</button>
+      <span id="pricestatus" style="color:var(--muted)"></span>
+    </div>
+  </div>
+
+  <div class="panel" id="out" style="display:none"></div>
+
+  <div class="note">
+    <b>About this build:</b> the crafting <b>logic</b> (every orb &amp; omen behavior + the recommended sequence) is
+    built for <b>patch 0.5.x</b>. The <b>mod data</b> — 61 gear bases with their real prefixes/suffixes (spawn weights,
+    tiers, tags, Essence mappings) <b>plus the 200+ desecrated mods</b> (Amanamu/Ulaman/Kurgal) — is generated from
+    <a href="https://www.craftofexile.com/?game=poe2" target="_blank" rel="noopener">Craft of Exile</a>'s 0.5 dataset,
+    so the mod lists and odds are live-patch accurate. Odds shown are first-order (weight ÷ side pool); real crafting
+    also blocks already-present mods and group conflicts, so treat them as a strong guide.
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+/* ===================== ORB & OMEN MECHANICS (patch 0.5.x) ===================== */
+/* Reference: each entry is what the currency/omen does to an item. Used to build steps. */
+const ORBS = {
+  transmute:{n:"Orb of Transmutation",e:"🔵",d:"Normal → Magic, adds 1 random affix"},
+  augment:{n:"Orb of Augmentation",e:"🔷",d:"Adds 1 affix to a Magic item"},
+  regal:{n:"Regal Orb",e:"🟡",d:"Magic → Rare, adds 1 random affix"},
+  alch:{n:"Orb of Alchemy",e:"🟠",d:"Normal → Rare with 4 random affixes"},
+  exalt:{n:"Exalted Orb",e:"⭐",d:"Adds 1 random affix to a Rare item"},
+  chaos:{n:"Chaos Orb",e:"🌀",d:"Removes 1 random affix and adds 1 random affix"},
+  annul:{n:"Orb of Annulment",e:"🟣",d:"Removes 1 random affix"},
+  divine:{n:"Divine Orb",e:"💠",d:"Re-rolls the numeric values of existing affixes"},
+  essence:{n:"Essence",e:"🟢",d:"Magic → Rare, guaranteeing one specific modifier"},
+  fracture:{n:"Fracturing Orb",e:"🔒",d:"Permanently locks one random affix (item needs ≥4 affixes)"},
+  vaal:{n:"Vaal Orb",e:"🔴",d:"Corrupts the item (random, irreversible outcome)"},
+  // Greater / Perfect variants — same action, but enforce a MINIMUM modifier level (= higher tiers)
+  gexalt:{n:"Greater Exalted Orb",e:"🌟",d:"Adds 1 random affix at a raised minimum mod level (≈ mid-high tier)"},
+  pexalt:{n:"Perfect Exalted Orb",e:"✨",d:"Adds 1 random affix at the HIGHEST mod level (top tier) — guarantees tier, not which mod"},
+  gregal:{n:"Greater Regal Orb",e:"🌟",d:"Magic → Rare, adds 1 affix at a raised minimum mod level"},
+  pregal:{n:"Perfect Regal Orb",e:"✨",d:"Magic → Rare, adds 1 affix at the HIGHEST mod level (top tier)"},
+  gchaos:{n:"Greater Chaos Orb",e:"🌟",d:"Removes 1 random affix and adds 1 at a raised minimum mod level"},
+  pchaos:{n:"Perfect Chaos Orb",e:"✨",d:"Removes 1 random affix and adds 1 at the HIGHEST mod level"},
+  paug:{n:"Perfect Orb of Augmentation",e:"✨",d:"Adds 1 affix to a Magic item at the HIGHEST mod level"},
+  ptransmute:{n:"Perfect Orb of Transmutation",e:"✨",d:"Normal → Magic, adds 1 affix at the HIGHEST mod level"},
+  hinekora:{n:"Hinekora's Lock",e:"🔮",d:"Foresight — preview the NEXT currency's outcome before committing, then keep or discard it"}
+};
+const OMENS = {
+  sin_exalt:{n:"Omen of Sinistral Exaltation",d:"next Exalted Orb adds only a PREFIX"},
+  dex_exalt:{n:"Omen of Dextral Exaltation",d:"next Exalted Orb adds only a SUFFIX"},
+  greater_exalt:{n:"Omen of Greater Exaltation",d:"next Exalted Orb adds TWO affixes"},
+  homog_exalt:{n:"Omen of Homogenising Exaltation",d:"next Exalted Orb adds an affix that shares a TAG with an existing one"},
+  sin_annul:{n:"Omen of Sinistral Annulment",d:"next Annulment removes only a PREFIX"},
+  dex_annul:{n:"Omen of Dextral Annulment",d:"next Annulment removes only a SUFFIX"},
+  greater_annul:{n:"Omen of Greater Annulment",d:"next Annulment removes TWO affixes"},
+  whittle:{n:"Omen of Whittling",d:"next Chaos Orb removes the LOWEST-level affix"},
+  sin_erase:{n:"Omen of Sinistral Erasure",d:"next Chaos Orb removes a PREFIX (then adds a random one)"},
+  dex_erase:{n:"Omen of Dextral Erasure",d:"next Chaos Orb removes a SUFFIX (then adds a random one)"},
+  sin_cryst:{n:"Omen of Sinistral Crystallisation",d:"next Perfect/Corrupted Essence removes only a PREFIX"},
+  dex_cryst:{n:"Omen of Dextral Crystallisation",d:"next Perfect/Corrupted Essence removes only a SUFFIX"},
+  blessed:{n:"Omen of the Blessed",d:"next Divine Orb re-rolls only the IMPLICIT modifiers"},
+  sanctify:{n:"Omen of Sanctification",d:"Divine re-rolls every mod to 80–120% of its range, then LOCKS the item from further crafting"},
+  // Abyss / desecration omens (used at the Well of Souls)
+  ab_echoes:{n:"Omen of Abyssal Echoes",d:"before revealing at the Well of Souls, rerolls the THREE desecrated options"},
+  ab_light:{n:"Omen of Light",d:"removes an unwanted Desecrated modifier — lets you desecrate the item again"},
+  om_liege:{n:"Omen of the Liege",d:"desecration reveals only Amanamu (defensive) mods — blocks the other two pools"},
+  om_sovereign:{n:"Omen of the Sovereign",d:"desecration reveals only Ulaman (offensive: crit / added ele) mods"},
+  om_blackblood:{n:"Omen of the Blackblooded",d:"desecration reveals only Kurgal (ailment: poison / bleed / ignite) mods"}
+};
+/* Abyssal bones — desecrate a Rare item by slot; tiers gate item/mod level. Names match poe2scout for pricing. */
+const BONES = {
+  weapon:{slot:"Weapon / Quiver", bone:"Jawbone"},
+  armour:{slot:"Armour", bone:"Rib"},
+  jewellery:{slot:"Amulet / Ring / Belt", bone:"Collarbone"},
+  jewel:{slot:"Jewel", bone:"Cranium"}
+};
+const BONE_TIERS = {
+  Gnawed:"works on ilvl ≤64 items (campaign / early maps)",
+  Preserved:"works on any item — the endgame workhorse",
+  Ancient:"ilvl 75+, guarantees a higher mod level (min mod level 40)"
+};
+const FACTIONS = {
+  any:{name:"Any (no targeting)", omen:null, desc:"reveal pulls from all three pools"},
+  amanamu:{name:"Amanamu · defensive", omen:"om_liege", desc:"life & defences — best on shields / body armour"},
+  ulaman:{name:"Ulaman · offensive", omen:"om_sovereign", desc:"crit chance & added elemental damage — best on weapons / jewellery"},
+  kurgal:{name:"Kurgal · ailments", omen:"om_blackblood", desc:"poison / bleed / ignite scaling — the niche damage-over-time pool"}
+};
+function slotKeyOf(name){
+  const n=name.toLowerCase();
+  if(/jewel/.test(n)) return "jewel";
+  if(/ring|amulet|belt/.test(n)) return "jewellery";
+  if(/quiver|bow|crossbow|wand|sceptre|staff|stave|sword|axe|mace|spear|dagger|claw|flail|focus/.test(n)) return "weapon";
+  return "armour";
+}
+/* rough currency cost in "Exalted-equivalents" — for a ballpark only */
+const COST = {exalt:1, annul:2, chaos:.6, essence:1, divine:5, regal:.5, transmute:.05, fracture:20, omen:1.5};
+
+/* shopping-list tally — build functions add to this; renderPlan shows it. Keys like "orb:exalt" / "omen:sin_exalt". */
+let craftTally={};
+const T=(k,q)=>{ if(q>0) craftTally[k]=(craftTally[k]||0)+q; };
+
+/* Monte-Carlo model — engines push each gambled mod {p,tryCost,missCost} + a fixed cost; the Simulate button runs it. */
+let simModel={mods:[], fixed:0};
+const SIM=(p,tryCost,missCost)=>{ if(p>0) simModel.mods.push({p,tryCost,missCost}); };
+function runSim(n){
+  const {mods,fixed}=simModel;
+  if(!mods.length) return null;
+  const totals=new Array(n);
+  for(let i=0;i<n;i++){
+    let c=fixed;
+    for(const m of mods){
+      // geometric draw: attempts until the first success (inverse-CDF, O(1))
+      const tries=Math.max(1, Math.ceil(Math.log(1-Math.random())/Math.log(1-m.p)));
+      c += tries*m.tryCost + (tries-1)*m.missCost;
+    }
+    totals[i]=c;
+  }
+  totals.sort((a,b)=>a-b);
+  const q=f=>totals[Math.min(n-1, Math.floor(n*f))];
+  return {p10:q(.10), median:q(.50), p90:q(.90), p99:q(.99),
+          mean:totals.reduce((a,b)=>a+b,0)/n, min:totals[0], max:totals[n-1], n};
+}
+function simulateHTML(){
+  const r=runSim(10000);
+  if(!r) return `<div class="simbox"><p class="legend">Nothing to simulate (no gambled mods in this plan).</p></div>`;
+  const d=costDisp;
+  return `<div class="simbox">
+    <h4>🎲 Simulated 10,000 crafts</h4>
+    <div class="simgrid">
+      <div class="simstat"><b>${d(r.p10)}</b><span>lucky (10%)</span></div>
+      <div class="simstat hl"><b>${d(r.median)}</b><span>typical (median)</span></div>
+      <div class="simstat"><b>${d(r.p90)}</b><span>unlucky (90%)</span></div>
+      <div class="simstat"><b>${d(r.p99)}</b><span>worst 1%</span></div>
+    </div>
+    <p class="legend" style="margin-top:8px">Half of crafts finish under <b>${d(r.median)}</b>; 9 in 10 under <b>${d(r.p90)}</b>. Average <b>${d(r.mean)}</b> (the mean sits above the median because the unlucky tail is long — that's the variance the expected-cost number hides). ${(typeof PRICES==="undefined"||!PRICES.loaded)?`<i>Estimated prices — load prices for live numbers.</i>`:`Live poe2scout prices.`}</p>
+  </div>`;
+}
+function shoppingListHTML(){
+  const entries=Object.entries(craftTally).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  if(!entries.length) return "";
+  // poe2scout prices everything in Exalted (the base). Convert to the chosen display currency.
+  const cur=(typeof PRICES!=="undefined" && PRICES.display) || "exalted";
+  const rate = cur==="exalted" ? 1 : (typeof PRICES!=="undefined" && PRICES.rates && PRICES.rates[cur]);
+  const unit = cur==="divine"?"div":cur==="exalted"?"ex":"c";
+  const priced = !!(typeof PRICES!=="undefined" && PRICES.loaded && rate);
+  const conv=ex=>{const a=ex/rate; return (a<10?a.toFixed(1):Math.round(a).toLocaleString())+" "+unit;};
+  let totalEx=0, anyUnpriced=false;
+  const rows=entries.map(([k,v])=>{
+    const i=k.indexOf(":"), kind=k.slice(0,i), key=k.slice(i+1); const qty=Math.ceil(v);
+    const name = kind==="orb" ? ORBS[key].n : kind==="omen" ? OMENS[key].n : key;   // bone: key is the full name
+    const label = kind==="orb" ? `${ORBS[key].e} ${ORBS[key].n}` : kind==="omen" ? `🃏 ${OMENS[key].n}` : `🦴 ${key}`;
+    let priceHtml="";
+    if(priced){
+      const ex = PRICES.byName[name];
+      if(ex!=null){ const lineEx=ex*qty; totalEx+=lineEx; priceHtml=`<span class="price">≈ ${conv(lineEx)}</span>`; }
+      else { anyUnpriced=true; priceHtml=`<span class="price na">—</span>`; }
+    }
+    return `<label class="shopitem"><input type="checkbox"><span class="qty">×${qty}</span><span>${label}</span>${priceHtml}</label>`;
+  }).join("");
+  const total = priced ? `<div class="shoptotal">Estimated total: ≈ <b>${conv(totalEx)}</b>${anyUnpriced?` <span style="color:var(--muted);font-size:12.5px">— a few low-value items (“—”) aren't tracked</span>`:""}</div>` : "";
+  const foot = priced ? `Prices: live from poe2scout · ${PRICES.league}.`
+    : `Pick your league + “Get prices” above to convert this to real currency.`;
+  return `<div class="shoplist"><h4>🛒 Shopping list <span style="color:var(--muted);font-weight:400">— rough amounts to stock before you start</span></h4>${rows}${total}
+    <p class="legend" style="margin-top:8px">Quantities are expected averages (crafting is RNG — bring extra of the Exalts/Omens for the gamble steps). ${foot}</p></div>`;
+}
+
+/* MOD DATA lives in data.js (BASES) — generated from Craft of Exile's 0.5 dataset. */
+
+/* ===================== UI ===================== */
+const $=s=>document.querySelector(s);
+const baseSel=$("#base"), modcols=$("#modcols"), warn=$("#warn"), out=$("#out");
+let mode="custom";   // "custom" | "perfect" | "finish" | "jewel" | "ref"
+
+// The base dropdown shows jewels only in the Jewels tab, gear bases everywhere else.
+function populateBases(){
+  const jewelMode = mode==="jewel", cur=baseSel.value;
+  baseSel.innerHTML="";
+  Object.keys(BASES).filter(k=>!!BASES[k].jewel===jewelMode).forEach(k=>{
+    const o=document.createElement("option");o.value=k;o.textContent=BASES[k].name;baseSel.appendChild(o);
+  });
+  if([...baseSel.options].some(o=>o.value===cur)) baseSel.value=cur;
+}
+populateBases();
+
+function tierSelHtml(m,title){
+  return `<select class="tiersel" data-id="${m.id}" title="${title}">${m.tiers.map((t,i)=>`<option value="${i}">${t.t} · ${t.val} · ilvl ${t.ilvl}</option>`).join("")}</select>`;
+}
+
+function renderMods(){
+  // The reference tab hides the crafting controls and shows the glossary instead.
+  const refMode = mode==="ref";
+  const craftEls=[$("#base"), $("#modsearch"), $("#go"), $("#pasterow"), document.querySelector('label[for="base"]')];
+  craftEls.forEach(el=>{ if(el) el.style.display = refMode?"none":""; });
+  document.querySelectorAll(".savebar").forEach(el=>el.style.display = refMode?"none":"");
+  if(refMode) $("#pastebox").style.display="none";
+  if(refMode){ modcols.innerHTML=renderReference(); warn.textContent=""; out.style.display="none"; return; }
+
+  const b=BASES[baseSel.value];
+  const pre=b.mods.filter(m=>m.type==="prefix"), suf=b.mods.filter(m=>m.type==="suffix");
+  const perfect=mode==="perfect", finish=mode==="finish";
+  const row=m=>{
+    const sc=(m.name+" "+m.tags.join(" ")+(m.des?" desecrated "+(m.faction||""):"")).toLowerCase();
+    const pills=`${m.essence?`<span class="pill">essence</span>`:""}${m.des?`<span class="despill">🦴 ${m.faction||"desecrated"}</span>`:""}`;
+    if(finish){
+      return `<div class="mod${m.des?" desmod":""}" data-search="${sc}"><div class="modbody">
+        <label class="mt">${m.name}${pills}</label>
+        <div class="finishrow">
+          <select class="rolesel" data-id="${m.id}" title="is this mod on your item, or a target to add?">
+            <option value="none">— not on item</option>
+            <option value="keep">✓ have it · keep</option>
+            <option value="junk">✕ have it · remove</option>
+            <option value="add">＋ want to add</option>
+          </select>${tierSelHtml(m,"tier (used when adding)")}
+        </div></div></div>`;
+    }
+    return `<div class="mod${m.des?" desmod":""}" data-search="${sc}"><input type="checkbox" id="cb_${m.id}" data-id="${m.id}">
+      <div class="modbody">
+        <label for="cb_${m.id}" class="mt">${m.name}${pills}</label>
+        ${perfect
+          ? `<span class="t1tag">🎯 ${m.tiers[0].t} · ${m.tiers[0].val} · ilvl ${m.tiers[0].ilvl}</span>`
+          : tierSelHtml(m,"the lowest tier you'll accept")}
+      </div></div>`;
+  };
+  const hint=perfect?"(max 3 · all chased at T1)":finish?"(tag each: keep / remove / add)":mode==="jewel"?"(max 2 · jewel cap)":"(max 3 · choose a tier)";
+  const col=(title,arr)=>`<div class="modcol"><h3>${title} <span style="color:var(--muted);font-weight:400">${hint}</span></h3>`+
+    arr.map(row).join("")+`</div>`;
+  modcols.innerHTML=col("Prefixes",pre)+col("Suffixes",suf);
+  applyFilter();   // re-apply any active search after a re-render (base/mode change)
+  warn.textContent="";out.style.display="none";
+}
+baseSel.addEventListener("change",renderMods);
+
+// Reference glossary — every currency/omen/bone the planner's logic uses (for coverage review).
+function renderReference(){
+  const orbRow=k=>ORBS[k]?`<tr><td class="rn">${ORBS[k].e} <b>${ORBS[k].n}</b>${desPrice(ORBS[k].n)}</td><td>${ORBS[k].d}</td></tr>`:"";
+  const omenRow=k=>OMENS[k]?`<tr><td class="rn">🃏 <b>${OMENS[k].n}</b>${desPrice(OMENS[k].n)}</td><td>${OMENS[k].d}</td></tr>`:"";
+  const sec=(title,sub,keys,fn)=>`<div class="refsec"><h3>${title} ${sub?`<span style="color:var(--muted);font-weight:400;font-size:12.5px">${sub}</span>`:""}</h3><table><tbody>${keys.map(fn).join("")}</tbody></table></div>`;
+  const boneRows=Object.values(BONES).map(x=>`<tr><td class="rn">🦴 <b>Preserved ${x.bone}</b>${desPrice("Preserved "+x.bone)}</td><td>desecrates a Rare ${x.slot}</td></tr>`).join("");
+  const nOrb=Object.keys(ORBS).length, nOm=Object.keys(OMENS).length;
+  const priced = typeof PRICES!=="undefined" && PRICES.loaded;
+  return `<div class="refwrap">
+    <p class="legend" style="margin:0 0 12px">Everything the planner's logic uses: <b>${nOrb}</b> currency orbs, <b>${nOm}</b> omens, and the desecration bones. Prices ${priced?`live from poe2scout · ${PRICES.league}`:`appear once you load prices (Get prices on any craft tab)`}. <b>If something's missing, tell me and I'll add it.</b></p>
+    ${sec("💱 Currency — base orbs","the core affix currency",["transmute","augment","regal","alch","exalt","chaos","annul","divine","essence","fracture","vaal"],orbRow)}
+    ${sec("🌟 Greater / ✨ Perfect orbs","minimum-mod-level variants → deterministic tiers",["gexalt","pexalt","gregal","pregal","gchaos","pchaos","paug","ptransmute"],orbRow)}
+    ${sec("🔮 Crafting tools","",["hinekora"],orbRow)}
+    ${sec("🃏 Omens — Exaltation","direct/upgrade the next Exalt",["sin_exalt","dex_exalt","greater_exalt","homog_exalt"],omenRow)}
+    ${sec("🃏 Omens — Annulment","direct the next Annulment",["sin_annul","dex_annul","greater_annul"],omenRow)}
+    ${sec("🃏 Omens — Chaos / removal","direct the next Chaos",["whittle","sin_erase","dex_erase"],omenRow)}
+    ${sec("🃏 Omens — Essence","direct essence removal",["sin_cryst","dex_cryst"],omenRow)}
+    ${sec("🃏 Omens — finishing","Divine-step omens",["blessed","sanctify"],omenRow)}
+    ${sec("🦴 Omens — Abyss / desecration","Well of Souls",["ab_echoes","ab_light","om_liege","om_sovereign","om_blackblood"],omenRow)}
+    <div class="refsec"><h3>🦴 Abyssal bones <span style="color:var(--muted);font-weight:400;font-size:12.5px">desecrate by slot · tiers Gnawed ≤ilvl64 / Preserved any / Ancient ilvl75+</span></h3><table><tbody>${boneRows}</tbody></table></div>
+  </div>`;
+}
+
+// mod search filter — show/hide rows (preserves selections; works in every tab)
+function applyFilter(){
+  const terms=$("#modsearch").value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  modcols.querySelectorAll(".mod").forEach(r=>{
+    r.style.display = (!terms.length || terms.every(t=>r.dataset.search.includes(t))) ? "" : "none";
+  });
+}
+$("#modsearch").addEventListener("input",applyFilter);
+
+// Paste-an-item import — parse pasted item text and auto-select the matching mods (+ tiers).
+function normMod(s){ return s.replace(/\d+(\.\d+)?/g,"#").replace(/\s+/g," ").trim().toLowerCase(); }
+function bestTierFor(m,val){
+  for(let i=0;i<m.tiers.length;i++){
+    const ns=(m.tiers[i].val.match(/\d+(\.\d+)?/g)||[]).map(Number);
+    if(ns.length>=2 && val>=Math.min(ns[0],ns[1]) && val<=Math.max(ns[0],ns[1])) return i;
+    if(ns.length===1 && Math.round(val)===Math.round(ns[0])) return i;
+  }
+  return -1;
+}
+function importItemText(text){
+  const b=BASES[baseSel.value];
+  const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  const lineByNorm={}; lines.forEach(l=>{ const k=normMod(l); if(!(k in lineByNorm)) lineByNorm[k]=l; });
+  const wanted=new Set(Object.keys(lineByNorm));
+  let matched=0;
+  b.mods.forEach(m=>{
+    const nm=normMod(m.name);
+    if(!wanted.has(nm)) return;
+    matched++;
+    if(mode==="finish"){ const rs=modcols.querySelector(`select.rolesel[data-id="${m.id}"]`); if(rs) rs.value="add"; }
+    else { const cb=modcols.querySelector(`input[type=checkbox][data-id="${m.id}"]`); if(cb) cb.checked=true; }
+    if(mode!=="perfect"){   // best-effort: match the tier to the item's rolled value
+      const num=(lineByNorm[nm].match(/\d+(\.\d+)?/)||[])[0];
+      if(num!=null){ const ti=bestTierFor(m,+num); const ts=modcols.querySelector(`select.tiersel[data-id="${m.id}"]`); if(ts&&ti>=0) ts.value=ti; }
+    }
+  });
+  return matched;
+}
+$("#pasteitembtn").addEventListener("click",()=>{ const pb=$("#pastebox"); const show=pb.style.display==="none"; pb.style.display=show?"block":"none"; if(show)$("#pasteitem").focus(); });
+$("#pasteimport").addEventListener("click",()=>{
+  const txt=$("#pasteitem").value; const msg=$("#pastemsg");
+  if(!txt.trim()){ msg.textContent="Paste an item's text first."; return; }
+  const n=importItemText(txt);
+  msg.textContent = n ? `✓ matched & selected ${n} mod${n===1?"":"s"} on ${BASES[baseSel.value].name} — adjust if needed, then Generate.`
+    : "No mods matched — make sure the base type (above) matches the item.";
+});
+
+renderMods();
+
+// tab switching
+function setMode(m){
+  mode=m;
+  $("#tab-custom").classList.toggle("active",m==="custom");
+  $("#tab-perfect").classList.toggle("active",m==="perfect");
+  $("#tab-finish").classList.toggle("active",m==="finish");
+  $("#tab-jewel").classList.toggle("active",m==="jewel");
+  $("#tab-ref").classList.toggle("active",m==="ref");
+  $("#go").textContent = m==="perfect" ? "Generate perfect (all-T1) plan →"
+    : m==="finish" ? "Generate finishing plan →"
+    : m==="jewel" ? "Generate jewel plan →" : "Generate crafting plan →";
+  populateBases();
+  renderMods();
+}
+$("#tab-custom").addEventListener("click",()=>setMode("custom"));
+$("#tab-perfect").addEventListener("click",()=>setMode("perfect"));
+$("#tab-finish").addEventListener("click",()=>setMode("finish"));
+$("#tab-jewel").addEventListener("click",()=>setMode("jewel"));
+$("#tab-ref").addEventListener("click",()=>setMode("ref"));
+
+function flatten(mod,ti){
+  const tier=mod.tiers[ti];
+  return {id:mod.id, type:mod.type, tags:mod.tags, essence:mod.essence,
+          name:tier.val, weight:tier.weight, ilvl:tier.ilvl,
+          tierLabel:tier.t, tierIdx:ti, tiers:mod.tiers,
+          des:!!mod.des, faction:mod.faction||null};
+}
+
+function selected(){
+  const b=BASES[baseSel.value];
+  return [...modcols.querySelectorAll("input[type=checkbox]:checked")].map(cb=>{
+    const id=cb.dataset.id, mod=b.mods.find(m=>m.id===id);
+    let ti=0;
+    if(mode!=="perfect"){ const ts=modcols.querySelector(`select.tiersel[data-id="${id}"]`); ti=ts?+ts.value:0; }
+    return flatten(mod,ti);   // perfect mode forces T1 (index 0)
+  });
+}
+
+function selectedFinish(){
+  const b=BASES[baseSel.value]; const rows=[];
+  modcols.querySelectorAll("select.rolesel").forEach(rs=>{
+    if(rs.value==="none") return;
+    const id=rs.dataset.id, mod=b.mods.find(m=>m.id===id);
+    const ts=modcols.querySelector(`select.tiersel[data-id="${id}"]`);
+    const f=flatten(mod, ts?+ts.value:0); f.role=rs.value; rows.push(f);
+  });
+  return rows;
+}
+
+let lastBase=null, lastDesTargets=[];   // remembered for the desecration section appended to every plan
+$("#go").addEventListener("click",()=>{
+  const b=BASES[baseSel.value];
+  lastBase=b; lastDesTargets=[];
+  warn.textContent="";
+
+  if(mode==="finish"){
+    const rows=selectedFinish();
+    const keepers=rows.filter(r=>r.role==="keep"), junk=rows.filter(r=>r.role==="junk"), targets=rows.filter(r=>r.role==="add");
+    if(!junk.length && !targets.length){warn.textContent="Tag the mods already on your item (keep / remove) and the ones you want to add.";return;}
+    const cnt=(a,t)=>a.filter(m=>m.type===t).length;
+    if(cnt([...keepers,...junk],"prefix")>3){warn.textContent="Your item can't already have more than 3 prefixes.";return;}
+    if(cnt([...keepers,...junk],"suffix")>3){warn.textContent="Your item can't already have more than 3 suffixes.";return;}
+    if(cnt(keepers,"prefix")+cnt(targets,"prefix")>3){warn.textContent="Keepers + target prefixes exceed 3 — remove or drop a prefix.";return;}
+    if(cnt(keepers,"suffix")+cnt(targets,"suffix")>3){warn.textContent="Keepers + target suffixes exceed 3 — remove or drop a suffix.";return;}
+    lastDesTargets=targets.filter(m=>m.des);
+    renderPlan(buildFinishPlan(b,keepers,junk,targets)); return;
+  }
+
+  const sel=selected();
+  const pre=sel.filter(m=>m.type==="prefix"), suf=sel.filter(m=>m.type==="suffix");
+  const cap = mode==="jewel" ? 2 : 3;
+  if(!sel.length){warn.textContent="Pick at least one modifier you want on the finished item.";return;}
+  if(pre.length>cap){warn.textContent=`A ${mode==="jewel"?"jewel":"Rare item"} can have at most ${cap} prefixes${mode==="jewel"?" (5th mod comes from Vaal corruption)":""}.`;return;}
+  if(suf.length>cap){warn.textContent=`A ${mode==="jewel"?"jewel":"Rare item"} can have at most ${cap} suffixes${mode==="jewel"?" (5th mod comes from Vaal corruption)":""}.`;return;}
+  lastDesTargets=sel.filter(m=>m.des);
+  renderPlan(mode==="perfect" ? buildPerfectPlan(b,pre,suf) : mode==="jewel" ? buildJewelPlan(b,pre,suf) : buildPlan(b,pre,suf));
+});
+
+/* ===================== SAVE / LOAD / SHARE ===================== */
+const LS="poe2_saved_crafts";
+const loadSaved=()=>{try{return JSON.parse(localStorage.getItem(LS)||"{}");}catch(e){return {};}};
+const storeSaved=o=>localStorage.setItem(LS,JSON.stringify(o));
+
+function captureCraft(){
+  const picks=[];
+  if(mode==="finish"){
+    modcols.querySelectorAll("select.rolesel").forEach(rs=>{
+      if(rs.value==="none")return;
+      const id=rs.dataset.id, ts=modcols.querySelector(`select.tiersel[data-id="${id}"]`);
+      picks.push({id,role:rs.value,ti:ts?+ts.value:0});
+    });
+  } else {
+    modcols.querySelectorAll("input[type=checkbox]:checked").forEach(cb=>{
+      const id=cb.dataset.id, ts=modcols.querySelector(`select.tiersel[data-id="${id}"]`);
+      picks.push({id,ti:ts?+ts.value:0});
+    });
+  }
+  return {base:baseSel.value, mode, picks};
+}
+
+function applyCraft(c){
+  if(!c||!BASES[c.base]){warn.textContent="Couldn't load that craft (unknown base).";return false;}
+  baseSel.value=c.base;
+  setMode(c.mode||"custom");          // re-renders rows for this base + mode
+  $("#modsearch").value=""; applyFilter();
+  (c.picks||[]).forEach(p=>{
+    if(c.mode==="finish"){
+      const rs=modcols.querySelector(`select.rolesel[data-id="${p.id}"]`); if(rs&&p.role)rs.value=p.role;
+    } else {
+      const cb=modcols.querySelector(`input[type=checkbox][data-id="${p.id}"]`); if(cb)cb.checked=true;
+    }
+    const ts=modcols.querySelector(`select.tiersel[data-id="${p.id}"]`); if(ts&&p.ti!=null)ts.value=p.ti;
+  });
+  return true;
+}
+
+function refreshSavedList(){
+  const o=loadSaved(), sl=$("#savedlist");
+  sl.innerHTML=`<option value="">⤓ Saved crafts…</option>`+
+    Object.keys(o).sort().map(n=>`<option value="${n.replace(/"/g,"&quot;")}">${n}</option>`).join("");
+}
+
+$("#savecraft").addEventListener("click",()=>{
+  const name=($("#craftname").value||"").trim();
+  if(!name){warn.textContent="Give the craft a name first.";return;}
+  if(!captureCraft().picks.length){warn.textContent="Pick some mods before saving.";return;}
+  const o=loadSaved(); o[name]=captureCraft(); storeSaved(o);
+  refreshSavedList(); $("#savedlist").value=name; $("#craftname").value=""; warn.textContent="";
+});
+$("#loadcraft").addEventListener("click",()=>{
+  const n=$("#savedlist").value; if(!n)return;
+  const o=loadSaved(); if(o[n] && applyCraft(o[n])) $("#go").click();
+});
+$("#delcraft").addEventListener("click",()=>{
+  const n=$("#savedlist").value; if(!n)return;
+  const o=loadSaved(); delete o[n]; storeSaved(o); refreshSavedList();
+});
+
+const craftCode=()=>btoa(unescape(encodeURIComponent(JSON.stringify(captureCraft()))));
+$("#importbtn").addEventListener("click",()=>{
+  const code=($("#importbox").value||"").trim(); if(!code)return;
+  try{
+    const c=JSON.parse(decodeURIComponent(escape(atob(code))));
+    if(applyCraft(c)){ $("#importbox").value=""; $("#go").click(); }
+  }catch(e){ warn.textContent="That craft code didn't read — make sure it copied in full."; }
+});
+refreshSavedList();
+
+function copyText(t){
+  const ta=document.createElement("textarea");
+  ta.value=t; ta.style.position="fixed"; ta.style.opacity="0";
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand("copy"); }catch(e){ try{navigator.clipboard.writeText(t);}catch(_){} }
+  ta.remove();
+}
+function planToText(){
+  const lines=[];
+  const h=out.querySelector("h3"); if(h)lines.push(h.textContent.trim());
+  const banner=out.querySelector(".banner"); if(banner)lines.push("\n"+banner.textContent.replace(/\s+/g," ").trim());
+  out.querySelectorAll(".step").forEach((st,i)=>{
+    const t=st.querySelector("h4"), p=st.querySelector("p");
+    lines.push(`\n${i+1}. ${t?t.textContent.trim():""}`);
+    if(p)lines.push("   "+p.textContent.replace(/\s+/g," ").trim());
+  });
+  out.querySelectorAll(".stat").forEach(s=>lines.push("\n• "+s.textContent.replace(/\s+/g," ").trim()));
+  if(out.querySelector(".shoplist")){
+    lines.push("\n🛒 Shopping list:");
+    out.querySelectorAll(".shopitem").forEach(it=>lines.push("  • "+it.textContent.replace(/\s+/g," ").trim()));
+  }
+  lines.push("\n— made with PoE2 Craft Planner");
+  return lines.join("\n");
+}
+function attachShareHandlers(){
+  const cs=$("#copysteps"), cc=$("#copycode"), msg=$("#copymsg");
+  if(cs)cs.onclick=()=>{copyText(planToText()); if(msg){msg.textContent="Steps copied ✓"; setTimeout(()=>msg.textContent="",2200);}};
+  if(cc)cc.onclick=()=>{copyText(craftCode()); if(msg){msg.textContent="Craft code copied ✓ — paste it in someone's Import box"; setTimeout(()=>msg.textContent="",3500);}};
+}
+function renderPlan(html){
+  out.innerHTML=`<div class="sharebar"><button class="btn sm" id="copysteps">📋 Copy steps</button>`+
+    `<button class="btn sm ghost" id="copycode">🔗 Copy craft code</button>`+
+    `<button class="btn sm ghost" id="simbtn">🎲 Simulate 10k</button>`+
+    `<span class="copymsg" id="copymsg"></span></div>`+html+`<div id="simout"></div>`+
+    desecrationSection(lastBase,lastDesTargets)+shoppingListHTML();
+  out.style.display="block";
+  out.scrollIntoView({behavior:"smooth",block:"start"});
+  attachShareHandlers();
+  // tick off steps as you craft — click a step's number to strike it through
+  out.querySelectorAll(".step .num").forEach(n=>n.onclick=()=>n.closest(".step").classList.toggle("done"));
+  const sb=$("#simbtn"); if(sb) sb.onclick=()=>{ $("#simout").innerHTML=simulateHTML(); $("#simout").scrollIntoView({behavior:"smooth",block:"nearest"}); };
+}
+
+/* ===================== LIVE PRICES (poe2scout via main process) ===================== */
+/* poe2scout prices everything in Exalted Orbs (the base). rates = exalted-per-divine / -chaos. */
+const PRICES={loaded:false, byName:{}, rates:{}, display:"exalted", league:"Runes of Aldur", ts:0};
+const PRICE_LS="poe2_prices_cache";
+function applyCachedPrices(){
+  try{
+    const c=JSON.parse(localStorage.getItem(PRICE_LS)||"{}"), lg=$("#leaguesel").value, e=c[lg];
+    if(e&&e.byName){ PRICES.byName=e.byName; PRICES.rates=e.rates; PRICES.league=lg; PRICES.ts=e.ts; PRICES.loaded=true; PRICES.display=$("#curdisplay").value;
+      $("#pricestatus").textContent="cached "+new Date(e.ts).toLocaleDateString(); return true; }
+  }catch(e){}
+  return false;
+}
+async function getPrices(){
+  const lg=$("#leaguesel").value, st=$("#pricestatus");
+  if(!window.poeapi){ st.textContent="(prices only in the desktop app)"; return; }
+  st.textContent="fetching…";
+  const d=await window.poeapi.fetchPrices(lg);
+  if(!d || d.error || !d.byName || Object.keys(d.byName).length<2){ st.textContent="couldn't fetch — try again"; return; }
+  const byName=d.byName;
+  const rates={ divine: byName["Divine Orb"]||d.divinePrice||null, chaos: byName["Chaos Orb"]||null };
+  PRICES.byName=byName; PRICES.rates=rates;
+  PRICES.league=lg; PRICES.ts=Date.now(); PRICES.loaded=true; PRICES.display=$("#curdisplay").value;
+  let cache={}; try{cache=JSON.parse(localStorage.getItem(PRICE_LS)||"{}");}catch(e){}
+  cache[lg]={byName, rates, ts:PRICES.ts}; localStorage.setItem(PRICE_LS,JSON.stringify(cache));
+  st.textContent="updated "+new Date().toLocaleTimeString()+" ✓";
+  if(out.style.display!=="none") $("#go").click();
+}
+async function populateLeagues(){
+  if(!window.poeapi || !window.poeapi.fetchLeagues) return;
+  try{
+    const lgs=await window.poeapi.fetchLeagues();
+    if(!Array.isArray(lgs) || !lgs.length) return;
+    const cur=lgs.filter(l=>l.IsCurrent), rest=lgs.filter(l=>!l.IsCurrent);
+    const opt=l=>`<option value="${String(l.Value).replace(/"/g,"&quot;")}">${l.Value}${l.IsCurrent?" · current":""}</option>`;
+    $("#leaguesel").innerHTML=cur.map(opt).join("")+rest.map(opt).join("");
+    if(cur.length) $("#leaguesel").value=cur[0].Value;
+    applyCachedPrices();
+  }catch(e){}
+}
+$("#getprices").addEventListener("click",getPrices);
+$("#curdisplay").addEventListener("change",()=>{ PRICES.display=$("#curdisplay").value; if(out.style.display!=="none")$("#go").click(); });
+$("#leaguesel").addEventListener("change",()=>{ applyCachedPrices(); if(out.style.display!=="none")$("#go").click(); });
+populateLeagues();
+applyCachedPrices();
+
+// On launch, check the public version manifest and show a banner if a newer build exists.
+(async()=>{
+  if(!window.poeapi || !window.poeapi.checkUpdate) return;
+  try{
+    const u=await window.poeapi.checkUpdate();
+    if(u && u.update){
+      const bar=$("#updbar");
+      bar.innerHTML=`🆕 <b>Update available — v${u.version}</b>${u.notes?` · ${u.notes}`:""} <a id="updlink">Download →</a><span class="x" id="updx">✕</span>`;
+      bar.style.display="flex";
+      $("#updlink").onclick=()=>window.poeapi.openExternal(u.url||"");
+      $("#updx").onclick=()=>bar.style.display="none";
+    }
+  }catch(e){}
+})();
+
+/* ===================== EXPECTED-COST OPTIMIZER ===================== */
+// Picks the cheapest orb to add a target mod, by (avg attempts × orb price) + (misses × annulment).
+// Uses live poe2scout prices when loaded, else known-estimate fallbacks (all in Exalted).
+function exPrice(name, def){
+  return (typeof PRICES!=="undefined" && PRICES.loaded && PRICES.byName[name]!=null) ? PRICES.byName[name] : def;
+}
+function fmtEx(x){ return x<10 ? (Math.round(x*10)/10) : Math.round(x).toLocaleString(); }
+function costDisp(ex){
+  const cur=(typeof PRICES!=="undefined" && PRICES.display) || "exalted";
+  const rate=cur==="exalted"?1:(typeof PRICES!=="undefined" && PRICES.rates && PRICES.rates[cur]);
+  if(!rate) return fmtEx(ex)+" ex";
+  const a=ex/rate, u=cur==="divine"?"div":cur==="exalted"?"ex":"c";
+  return (a<10?(Math.round(a*10)/10):Math.round(a).toLocaleString())+" "+u;
+}
+// Returns orb method options sorted cheapest-first for adding mod m at its chosen tier (or better).
+function methodOptions(base, m, present){
+  // Mods already on the item can't re-roll, so they leave the pool — sharper odds for later mods.
+  const skip=new Set((present||[]).filter(p=>p && p.type===m.type && p.id!==m.id).map(p=>p.id));
+  const sideMods=base.mods.filter(x=>x.type===m.type && !x.des && !skip.has(x.id));
+  const tgt=m.tierIdx;
+  const poolW=min=>{let s=0;sideMods.forEach(x=>x.tiers.forEach(t=>{if(t.ilvl>=min)s+=t.weight;}));return s;};
+  const succW=min=>{let s=0;m.tiers.forEach((t,i)=>{if(i<=tgt && t.ilvl>=min)s+=t.weight;});return s;};
+  const topPool=sideMods.reduce((a,x)=>a+x.tiers[0].weight,0);
+  const pAnnul=exPrice("Orb of Annulment",220), pAddOmen=2;   // directional Exaltation omen ~cheap/untracked
+  const make=(key,orbName,orbDef,p)=>{
+    if(!(p>0)) return null;
+    const n=1/p, orb=exPrice(orbName,orbDef);
+    // tryCost = spent per attempt; missCost = extra to clear a wrong roll (per miss). Used by the simulator.
+    return {key, p, pct:p*100, n:Math.max(1,Math.round(n)), cost:n*(orb+pAddOmen)+(n-1)*pAnnul,
+            tryCost:orb+pAddOmen, missCost:pAnnul};
+  };
+  const opts=[
+    make("exalt","Exalted Orb",1, poolW(0)>0?succW(0)/poolW(0):0),                 // any tier — tier is a gamble
+    make("gexalt","Greater Exalted Orb",4.5, poolW(45)>0?succW(45)/poolW(45):0),   // min mod level ~44 → higher tiers
+    make("pexalt","Perfect Exalted Orb",862, topPool>0?m.tiers[0].weight/topPool:0)// top tier guaranteed
+  ].filter(Boolean);
+  opts.sort((a,b)=>a.cost-b.cost);
+  return opts;
+}
+function methodCompare(opts, bestKey){
+  return opts.map(x=>{
+    const nm=ORBS[x.key].n.replace(" Orb","").replace("Exalted","Exalt");
+    return x.key===bestKey ? `<b>${nm} ~${costDisp(x.cost)} ◄</b>` : `${nm} ~${costDisp(x.cost)}`;
+  }).join(" · ");
+}
+
+/* ===================== THE PLANNER ENGINE ===================== */
+function buildPlan(base,pre,suf){
+  craftTally={}; simModel={mods:[],fixed:0};
+  // desecrated targets are added at the Well of Souls, not via Exalts — peel them off the normal plan
+  pre=pre.filter(m=>!m.des); suf=suf.filter(m=>!m.des);
+  const all=[...pre,...suf];
+  if(!all.length) return desOnlyIntro(base);   // every target is desecrated → desecration section is the whole plan
+  const ilvlReq=Math.max(...all.map(m=>m.ilvl));
+  // pools for odds (sum of weights on each side) — desecrated mods aren't in the Exalt pool
+  const sumTiers=m=>m.tiers.reduce((s,t)=>s+t.weight,0);
+  const pretot=base.mods.filter(m=>m.type==="prefix" && !m.des).reduce((a,m)=>a+sumTiers(m),0);
+  const suftot=base.mods.filter(m=>m.type==="suffix" && !m.des).reduce((a,m)=>a+sumTiers(m),0);
+
+  // anchor = rarest target that has an essence; else rarest overall
+  const ess=all.filter(m=>m.essence);
+  let anchor=null;
+  if(ess.length) anchor=ess.reduce((a,m)=>m.weight<a.weight?m:a);
+  else anchor=all.reduce((a,m)=>m.weight<a.weight?m:a);
+
+  const steps=[]; let cost=0;
+  const orb=k=>`<span class="chip" data-tip="${ORBS[k].d}">${ORBS[k].e} ${ORBS[k].n}</span>`;
+  const omen=k=>`<span class="chip" data-tip="${OMENS[k].d}">🃏 ${OMENS[k].n}</span>`;
+
+  // 1 — base
+  steps.push({h:"Start with a clean white base",
+    p:`Get a <b>Normal (white) ${base.name}</b> with <b>item level ≥ ${ilvlReq}</b>.`,
+    why:`Patch 0.5 has no Orb of Scouring, so you can't wipe a botched item — always build up from white. The item level must meet the highest tier you're chasing (your rarest target here needs ilvl ${ilvlReq}).`,
+    chips:[]});
+
+  // 2 — create the rare + guarantee the anchor
+  if(anchor.essence){
+    cost+=COST.transmute+COST.essence; T("orb:transmute",1); T("orb:essence",1);
+    steps.push({h:`Guarantee your hardest mod with an Essence`,
+      p:`Use ${orb("transmute")} to make it Magic, then apply <b>${anchor.essence}</b> to upgrade it to Rare — this <b>guarantees ${anchor.name}</b>.`,
+      why:`${anchor.name} is your rarest target (spawn weight ${anchor.weight}), so locking it in deterministically is far cheaper than gambling for it. Essence-guaranteed = it's on the item for sure; everything else you'll add around it.`,
+      chips:[orb("transmute"),orb("essence")]});
+  } else {
+    cost+=COST.transmute+COST.regal; T("orb:transmute",1); T("orb:regal",1);
+    steps.push({h:`Create a Rare base to build on`,
+      p:`Use ${orb("transmute")} then ${orb("regal")} to turn it into a Rare. (No essence covers any of your targets, so we'll add everything with Exalts + Omens.)`,
+      why:`This gives you a Rare with 2 affixes to start directing additions onto. Alternatively ${ORBS.alch.n} jumps straight to a 4-affix Rare if you'd rather fill faster and fix mistakes after.`,
+      chips:[orb("transmute"),orb("regal")]});
+  }
+
+  // helper: odds of hitting the target at the DESIRED tier or better when forcing its side.
+  // "or better" = any tier index ≤ the one you picked, that the item level can actually roll.
+  const sideTot=t=>t==="prefix"?pretot:suftot;
+  const odds=(m,ilvlReq)=>{
+    const accept=m.tiers.reduce((s,t,i)=>s+(i<=m.tierIdx && t.ilvl<=ilvlReq?t.weight:0),0);
+    const exact=(m.tiers[m.tierIdx]||{weight:0}).weight;
+    const p=accept/sideTot(m.type);
+    return {p, pct:p*100, n:Math.max(1,Math.round(1/p)), exactPct:exact/sideTot(m.type)*100};
+  };
+
+  // 3 — add remaining mods, side by side
+  const addOmen={prefix:"sin_exalt",suffix:"dex_exalt"};
+  const annulOmen={prefix:"sin_annul",suffix:"dex_annul"};
+  const remaining=all.filter(m=>m!==anchor);
+  const present=[anchor]; // mods known on the item, for homogenising hints
+
+  remaining.forEach(m=>{
+    const opts=methodOptions(base,m,present);
+    const best=opts[0]||{key:"exalt",n:Math.max(1,Math.round(1/(odds(m,ilvlReq).p||1))),pct:0,cost:0};
+    const tierOrb=best.key, guarant=tierOrb!=="exalt";
+    cost+=best.cost; SIM(best.p,best.tryCost,best.missCost);
+    T("orb:"+tierOrb,best.n); T("omen:"+addOmen[m.type],best.n); T("orb:annul",Math.max(0,best.n-1)); T("omen:"+annulOmen[m.type],Math.max(0,best.n-1));
+    const shared=present.find(p=>p.tags.some(t=>m.tags.includes(t)));
+    const homog=shared?` Because <b>${m.name}</b> shares the “${m.tags.find(t=>shared.tags.includes(t))}” tag with <b>${shared.name}</b>, swap in ${omen("homog_exalt")} to bias toward same-tag mods and hit it faster.`:"";
+    const cmp=methodCompare(opts,tierOrb);
+    const tierLine=` <b>Cheapest for ${m.tierLabel}:</b> ${orb(tierOrb)} — ≈${best.n} tries, about <b>${costDisp(best.cost)}</b> expected.${guarant?` ${orb("hinekora")} previews a slam before you commit.`:""}<br><span style="color:var(--muted)">By expected cost: ${cmp}${(typeof PRICES==="undefined"||!PRICES.loaded)?` · <i>estimated — load prices for live numbers</i>`:""}</span>`;
+    steps.push({h:`Add ${m.type}: ${m.name} (${m.tierLabel})`,
+      p:`Use ${omen(addOmen[m.type])} + ${orb(tierOrb)} to force a ${m.type}.${homog} Wrong ${m.type}? Clear it with ${omen(annulOmen[m.type])} + ${orb("annul")} and retry.${tierLine}`,
+      why:`The orb is chosen by <b>expected cost</b> — the mod's probability at ${m.tierLabel} weighed against orb + Annulment prices — not just the tier. A cheap Exalt can beat a Perfect Exalted for common mods; a Greater usually wins for high tiers; Perfect only pays off when the mod is common enough to guarantee in a few tries.`,
+      chips:[omen(addOmen[m.type]),orb(tierOrb)].concat(guarant?[orb("hinekora")]:[],[omen(annulOmen[m.type]),orb("annul")],shared?[omen("homog_exalt")]:[])});
+    present.push(m);
+  });
+
+  // 4 — mistake recovery / protection
+  if(all.length>=4){
+    cost+=COST.fracture;
+    steps.push({h:`(Optional) Lock a key mod before risky rerolls`,
+      p:`Once the item has ≥4 affixes and only good mods remain, you can ${orb("fracture")} to permanently lock one. Strip down to just the mod you want locked first, since Fracturing picks a <b>random</b> affix.`,
+      why:`Fracturing protects a hard-won mod (like ${anchor.name}) so you can ${orb("chaos")}-spam the rest without ever losing it.`,
+      chips:[orb("fracture")]});
+  }
+  steps.push({h:`Fix any leftover junk mods`,
+    p:`To remove a single unwanted affix and roll a fresh one in its place, use ${omen(all.length>1?"whittle":"sin_erase")} + ${orb("chaos")}. ${omen("whittle")} targets the <b>lowest-level</b> mod (usually the junk one); ${omen("sin_erase")}/${omen("dex_erase")} target a specific side. If you're swapping a mod with a Perfect/Corrupted Essence instead, ${omen("sin_cryst")} / ${omen("dex_cryst")} force it to remove only a prefix / suffix.`,
+    why:`Chaos = remove one + add one, so the omen tells it <i>which</i> mod to eat. This is your surgical clean-up tool once the item is mostly there.`,
+    chips:[omen("whittle"),orb("chaos"),omen("sin_cryst"),omen("dex_cryst")]});
+
+  // 5 — perfect the rolls
+  cost+=COST.divine*2; T("orb:divine",3);
+  steps.push({h:`Perfect the numeric rolls`,
+    p:`When all ${all.length} target mods are present, use ${orb("divine")} until the numbers are where you want them. For the final squeeze: ${omen("blessed")} makes a Divine re-roll only the <b>implicit</b>, and ${omen("sanctify")} rolls every mod to <b>80–120%</b> of range in one go — but then <b>locks the item</b> from any further crafting, so save it for a finished piece.`,
+    why:`Divine only re-rolls the values inside the ranges you already have — it never changes which mods are on the item, so it's safe to spam at the end. Sanctification is the high-roll gamble for a truly finished item.`,
+    chips:[orb("divine"),omen("blessed"),omen("sanctify")]});
+
+  // ---- render ----
+  const sel=all.map(m=>`<span class="chip">${m.type==="prefix"?"🟦":"🟥"} ${m.name}</span>`).join(" ");
+  const stepsHtml=steps.map((s,i)=>`<div class="step"><div class="num">${i+1}</div><div>
+    <h4>${s.h}</h4><p>${s.p}</p><div class="why">${s.why}</div>
+    ${s.chips.length?`<div class="tagline">${s.chips.join("")}</div>`:""}</div></div>`).join("");
+
+  // overall odds = product of per-mod hit chances at the desired tier (very rough)
+  const hitP=remaining.reduce((a,m)=>a*odds(m,ilvlReq).p,1);
+  const overall=hitP>0?(hitP*100):0;
+
+  return `<h3 style="margin:0 0 4px;color:var(--gold2)">Your craft: ${base.name}</h3>
+    <div class="tagline" style="margin-bottom:14px">${sel}</div>
+    ${stepsHtml}
+    <div class="summary">
+      <div class="stat"><b>~${Math.round(cost)} ex</b><span>rough currency budget (Exalted-equivalents, incl. omens &amp; misses)</span></div>
+      <div class="stat"><b>${anchor.essence?"Essence-anchored":"Exalt-only"}</b><span>strategy: ${anchor.essence?`guaranteed ${anchor.name}, then directed Exalts`:"build a rare, then directed Exalts"}</span></div>
+    </div>
+    <p class="legend" style="margin-top:14px"><b>Reading the odds &amp; tiers:</b> a percentage is the chance one directed Exalt lands that mod at <b>your chosen tier or better</b>, from this side's full pool (every tier of every mod). You can't <i>force</i> a tier with currency — item level only enables higher tiers, it never blocks lower ones — so expect to re-roll low hits with Whittling + Chaos, or sidestep the gamble by Essence-anchoring your most tier-sensitive mod. Divine re-rolls values <i>within</i> a tier, never the tier. Real crafting also blocks already-present mods and group conflicts, so treat the numbers as a strong guide. ${OMENS.homog_exalt.n} on same-tag mods improves them a lot.</p>`;
+}
+
+/* ===================== PERFECT CRAFT (all-T1) ENGINE ===================== */
+// Honest "chase every mod at T1" recipe: one Perfect-Essence-guaranteed T1, then a
+// force → check → surgically-remove → retry loop for the rest, fracture-locking T1s as
+// the item fills. Full determinism for all affixes is NOT possible in 0.5.
+function desOnlyIntro(base){
+  craftTally={}; simModel={mods:[],fixed:0};
+  return `<h3 style="margin:0 0 10px;color:var(--gold2)">Craft your ${base.name}</h3>
+    <div class="step"><div class="num">1</div><div><h4>Prep a Rare base, then desecrate</h4>
+    <p>Every mod you picked is a <b>desecrated</b> modifier, so the whole craft happens at the Well of Souls. Start with a <b>Rare ${base.name} at item level 65+</b> with open affix slots, then follow the Desecration steps below.</p>
+    <div class="why">Desecrated mods can't be added by Exalts or Essences — they only come from bones at the Well of Souls.</div></div></div>`;
+}
+function buildPerfectPlan(base,pre,suf){
+  craftTally={}; simModel={mods:[],fixed:0};
+  pre=pre.filter(m=>!m.des); suf=suf.filter(m=>!m.des);
+  const all=[...pre,...suf];
+  if(!all.length) return desOnlyIntro(base);
+  const orb=k=>`<span class="chip" data-tip="${ORBS[k].d}">${ORBS[k].e} ${ORBS[k].n}</span>`;
+  const omen=k=>`<span class="chip" data-tip="${OMENS[k].d}">🃏 ${OMENS[k].n}</span>`;
+  const ilvlReq=Math.max(...all.map(m=>m.tiers[0].ilvl));
+  const sumTiers=m=>m.tiers.reduce((s,t)=>s+t.weight,0);
+  const pretot=base.mods.filter(m=>m.type==="prefix" && !m.des).reduce((a,m)=>a+sumTiers(m),0);
+  const suftot=base.mods.filter(m=>m.type==="suffix" && !m.des).reduce((a,m)=>a+sumTiers(m),0);
+  const sideTot=t=>t==="prefix"?pretot:suftot;
+  // Perfect Exalted Orb guarantees TOP tier, so the only gamble is WHICH mod — odds = top-tier weight share.
+  const preTop=base.mods.filter(m=>m.type==="prefix" && !m.des).reduce((a,m)=>a+m.tiers[0].weight,0);
+  const sufTop=base.mods.filter(m=>m.type==="suffix" && !m.des).reduce((a,m)=>a+m.tiers[0].weight,0);
+  const sideTopTot=t=>t==="prefix"?preTop:sufTop;
+  const t1odds=m=>{const p=m.tiers[0].weight/sideTopTot(m.type);return {p, pct:p*100, n:Math.max(1,Math.round(1/p))};};
+
+  const ess=all.filter(m=>m.essence);
+  const anchor = ess.length ? ess.reduce((a,m)=>m.tiers[0].weight<a.tiers[0].weight?m:a) : null;
+  const gambled = all.filter(m=>m!==anchor);
+
+  const steps=[]; let cost=0;
+
+  steps.push({h:"Start with a MAX item-level white base",
+    p:`Get a <b>Normal (white) ${base.name}</b> at <b>item level ≥ ${ilvlReq}</b>.`,
+    why:`Non-negotiable for all-T1: every tier is capped by item level — even an Essence-guaranteed mod won't roll T1 on a low-ilvl base. Use the highest-ilvl base you can find.`,
+    chips:[]});
+
+  if(anchor){
+    cost+=COST.transmute+COST.essence; T("orb:transmute",1); T("orb:essence",1);
+    steps.push({h:"Lock your ONE guaranteed T1 (Perfect Essence)",
+      p:`${orb("transmute")} → then a <b>Perfect Essence</b> (the <b>${anchor.essence}</b> family) to make it Rare with <b>${anchor.name} guaranteed at T1</b>.`,
+      why:`This is the only mod you can hard-guarantee — patch 0.5 allows just one Essence modifier per item. Spend it on your rarest/most-important target (here: ${anchor.name}). Everything else is earned through the loop below.`,
+      chips:[orb("transmute"),orb("essence")]});
+  } else {
+    cost+=COST.transmute+COST.regal; T("orb:transmute",1); T("orb:regal",1);
+    steps.push({h:"No Essence anchor for these mods",
+      p:`None of your targets can be Essence-guaranteed. ${orb("transmute")} → ${orb("regal")} to open a Rare, then chase all of them through the loop below.`,
+      why:`Without an Essence-backable target you get zero guaranteed T1s. Consider including one mod that has an Essence to anchor the craft.`,
+      chips:[orb("transmute"),orb("regal")]});
+  }
+
+  const addOmen={prefix:"sin_exalt",suffix:"dex_exalt"};
+  const annulOmen={prefix:"sin_annul",suffix:"dex_annul"};
+  const present=anchor?[anchor]:[];
+  let combinedP=1;
+  gambled.forEach(m=>{
+    const o=t1odds(m); combinedP*=o.p;
+    cost += COST.exalt*2.2*o.n + COST.omen*o.n + COST.annul*Math.max(0,o.n-1);   // Perfect Exalt ≈ 2× a normal exalt
+    SIM(o.p, exPrice("Perfect Exalted Orb",862)+2, exPrice("Orb of Annulment",220));
+    T("orb:pexalt",o.n); T("omen:"+addOmen[m.type],o.n); T("orb:annul",Math.max(0,o.n-1)); T("omen:"+annulOmen[m.type],Math.max(0,o.n-1));
+    const shared=present.find(p=>p.tags.some(t=>m.tags.includes(t)));
+    const homog=shared?` Bias the roll with ${omen("homog_exalt")} — it favours affixes sharing the “${m.tags.find(t=>shared.tags.includes(t))}” tag with ${shared.name}, hitting it faster.`:"";
+    const canFrac=(present.length+1)>=4;
+    steps.push({h:`Earn T1: ${m.name}`,
+      p:`<b>1 · Force a top-tier ${m.type}:</b> ${omen(addOmen[m.type])} + ${orb("pexalt")} adds a ${m.type} at <b>guaranteed T1</b> — so you only gamble <i>which</i> mod now, not the tier. ~<b>${o.pct.toFixed(2)}%</b> land ${m.name} (≈${o.n} tries).${homog} <b>Tip:</b> ${orb("hinekora")} previews the result first, so you only spend a Perfect Exalted when it's the mod you want.<br>
+        <b>2 · Wrong mod? Remove and retry:</b> ${omen(annulOmen[m.type])} + ${orb("annul")} removes from this side only — re-run force→check→remove until ${m.name} lands.${canFrac?`<br><b>3 · Bank it:</b> with the item at 4+ affixes, ${orb("fracture")} permanently locks one (at random) — fracture to protect your T1 progress.`:""}`,
+      why:`Perfect Exalted Orbs remove the tier gamble entirely (always top mod level), so all-T1 is far more reachable than slamming normal Exalts — you only need to win the which-mod roll, and Hinekora's Lock lets you peek before committing.`,
+      chips:[omen(addOmen[m.type]),orb("pexalt"),orb("hinekora"),omen(annulOmen[m.type]),orb("annul")].concat(canFrac?[orb("fracture")]:[]).concat(shared?[omen("homog_exalt")]:[])});
+    present.push(m);
+  });
+
+  cost+=COST.divine*3; T("orb:divine",3);
+  steps.push({h:"Perfect the T1 numbers",
+    p:`Once all ${all.length} mods are T1, finish with ${orb("divine")} until the values land where you want.`,
+    why:`Divine only re-rolls the number inside each T1 tier — it never changes the mods, so it's safe to spam at the end.`,
+    chips:[orb("divine")]});
+
+  const sel=all.map(m=>`<span class="chip">${m.type==="prefix"?"🟦":"🟥"} ${m.name} <b>T1</b></span>`).join(" ");
+  const stepsHtml=steps.map((s,i)=>`<div class="step"><div class="num">${i+1}</div><div>
+    <h4>${s.h}</h4><p>${s.p}</p><div class="why">${s.why}</div>
+    ${s.chips.length?`<div class="tagline">${s.chips.join("")}</div>`:""}</div></div>`).join("");
+  const oneIn = combinedP>0 ? Math.round(1/combinedP) : Infinity;
+
+  return `<div class="banner"><b>Reality check (patch 0.5):</b> there is no one-button all-T1 craft, but <b>Perfect Exalted Orbs</b> guarantee the <b>top tier</b> on every add — so the only thing left to gamble is <i>which</i> mod, not its tier. You can also hard-guarantee exactly one mod outright (a Perfect Essence). The loop below is <i>force top-tier → remove-wrong → retry</i>, with Hinekora's Lock to preview before you commit.</div>
+    <h3 style="margin:0 0 4px;color:var(--gold2)">Perfect craft (all T1): ${base.name}</h3>
+    <div class="tagline" style="margin-bottom:14px">${sel}</div>
+    ${stepsHtml}
+    <div class="summary">
+      <div class="stat"><b>${anchor?"1 of "+all.length:"0 of "+all.length}</b><span>mods you can GUARANTEE at T1 ${anchor?`(${anchor.name}, via Perfect Essence)`:"(none — no essence-backed target)"}</span></div>
+      <div class="stat"><b>~${Math.round(cost)} ex</b><span>rough currency budget for the full all-T1 chase (the loop dominates)</span></div>
+    </div>
+    <p class="legend" style="margin-top:14px"><b>The other ${gambled.length} mod${gambled.length===1?"":"s"}</b> are earned with Perfect Exalted Orbs (tier already guaranteed) — you only chase <i>which</i> mod. Landing them all in one clean pass is about <b>1 in ${oneIn===Infinity?"∞":oneIn.toLocaleString()}</b>, so you grind the force→remove-wrong→retry loop, peek with Hinekora's Lock, and fracture-lock each mod as it lands.</p>
+    <p class="legend" style="margin-top:6px">💡 Perfect Exalted Orbs are expensive (~860 ex each). If you don't literally need <i>every</i> mod at T1, the <b>🎯 Custom Craft</b> tab picks the <b>cheapest</b> orb per mod by expected cost (often Greater Exalted) — usually far cheaper for the same goal.</p>`;
+}
+
+/* ===================== FINISH MY ITEM ENGINE ===================== */
+// Start from a found/partly-crafted item: keep some mods, strip the junk, add targets.
+function buildFinishPlan(base, keepers, junk, targets){
+  craftTally={}; simModel={mods:[],fixed:0};
+  targets=targets.filter(m=>!m.des);   // desecrated targets are added at the Well of Souls (section below)
+  if(!junk.length && !targets.length) return desOnlyIntro(base);
+  const orb=k=>`<span class="chip" data-tip="${ORBS[k].d}">${ORBS[k].e} ${ORBS[k].n}</span>`;
+  const omen=k=>`<span class="chip" data-tip="${OMENS[k].d}">🃏 ${OMENS[k].n}</span>`;
+  const present=[...keepers,...junk];
+  const ilvlReq = targets.length ? Math.max(...targets.map(m=>m.ilvl)) : 0;
+  const sumTiers=m=>m.tiers.reduce((s,t)=>s+t.weight,0);
+  const pretot=base.mods.filter(m=>m.type==="prefix" && !m.des).reduce((a,m)=>a+sumTiers(m),0);
+  const suftot=base.mods.filter(m=>m.type==="suffix" && !m.des).reduce((a,m)=>a+sumTiers(m),0);
+  const sideTot=t=>t==="prefix"?pretot:suftot;
+  const odds=m=>{const acc=m.tiers.reduce((s,t,i)=>s+(i<=m.tierIdx && t.ilvl<=ilvlReq?t.weight:0),0);const p=acc/sideTot(m.type);return {p,pct:p*100,n:Math.max(1,Math.round(1/p))};};
+  const addOmen={prefix:"sin_exalt",suffix:"dex_exalt"};
+  const annulOmen={prefix:"sin_annul",suffix:"dex_annul"};
+  const steps=[]; let cost=0;
+
+  const presHtml = present.length
+    ? present.map(m=>`<span class="chip">${m.type==="prefix"?"🟦":"🟥"} ${m.name} <b class="${m.role==="keep"?"badge-keep":"badge-junk"}">${m.role==="keep"?"keep":"remove"}</b></span>`).join(" ")
+    : `<i>(nothing marked as already on the item)</i>`;
+  steps.push({h:"Where you're starting",
+    p:`Your item right now:<div class="tagline" style="margin-top:6px">${presHtml}</div><div style="margin-top:8px">Goal: keep the ${keepers.length} keeper${keepers.length===1?"":"s"}, strip ${junk.length} junk mod${junk.length===1?"":"s"}${targets.length?`, and add ${targets.length} new mod${targets.length===1?"":"s"}`:""}.</div>`,
+    why:`Finishing a found item means working around what's already there — no Scouring in 0.5, so you can't start clean. The plan removes the junk and fills the freed slots.`,
+    chips:[]});
+
+  if(targets.length && present.length<=2 && keepers.filter(m=>m.type==="prefix").length<=1 && keepers.filter(m=>m.type==="suffix").length<=1 && junk.length===0){
+    steps.push({h:"Make it Rare if it's still Magic",
+      p:`If the item is still <b>Magic</b> (blue, ≤1 prefix + ≤1 suffix), use ${orb("regal")} to upgrade it to Rare so it can hold the mods you want to add.`,
+      why:`A Magic item caps at 1 prefix + 1 suffix — you need a Rare to fit more.`,
+      chips:[orb("regal")]});
+  }
+
+  if(targets.length){ steps.push({h:"Heads up: your item level is fixed",
+    p:`A found item's item level can't be changed — it must be <b>≥ ${ilvlReq}</b> for your target tiers. If it's lower, drop those targets to a tier the item can actually roll.`,
+    why:`Item level caps which tiers exist; you can't add a tier above the item's ilvl.`, chips:[]}); }
+
+  junk.forEach(m=>{
+    const sideKeepers=keepers.filter(k=>k.type===m.type);
+    cost+=COST.annul+COST.omen; T("orb:annul",1); T("omen:"+annulOmen[m.type],1);
+    if(sideKeepers.length===0){
+      steps.push({h:`Remove junk: ${m.name}`,
+        p:`No keeper shares its side, so it's a clean pull: ${omen(annulOmen[m.type])} + ${orb("annul")} removes a ${m.type}, and ${m.name} is the only ${m.type} you don't want — gone.`,
+        why:`Directional Annulment removes a random affix of the chosen side; with no keeper on that side, the junk is the only thing that can go.`,
+        chips:[omen(annulOmen[m.type]),orb("annul")]});
+    } else {
+      cost+=COST.fracture; T("orb:fracture",1);
+      steps.push({h:`Remove junk: ${m.name} — careful, keeper on this side`,
+        p:`A keeper (<b>${sideKeepers.map(k=>k.name).join(", ")}</b>) shares the ${m.type} side, so a plain ${omen(annulOmen[m.type])} + ${orb("annul")} could hit the keeper instead. Safer: get the item to 4+ affixes and ${orb("fracture")} to lock a keeper first, OR use ${omen("whittle")} + ${orb("chaos")} if ${m.name} is a lower tier than your keeper (Whittling eats the lowest-level affix).`,
+        why:`Annulment can't target a specific mod, only a side — and this side holds a keeper. Fracturing protects the keeper; Whittling targets the weakest roll, usually the junk.`,
+        chips:[orb("fracture"),omen("whittle"),orb("chaos"),omen(annulOmen[m.type]),orb("annul")]});
+    }
+  });
+
+  const essTarget = targets.filter(m=>m.essence).sort((a,b)=>a.tiers[0].weight-b.tiers[0].weight)[0];
+  const present2=[...keepers];
+  targets.forEach(m=>{
+    const opts=methodOptions(base,m,present2);
+    const best=opts[0]||{key:"exalt",n:Math.max(1,Math.round(1/(odds(m).p||1))),cost:0};
+    const tierOrb=best.key, guarant=tierOrb!=="exalt";
+    cost+=(m===essTarget? exPrice("Essence",6) : best.cost);
+    if(m===essTarget){ T("orb:essence",1); simModel.fixed+=exPrice("Essence",6); }
+    else { SIM(best.p,best.tryCost,best.missCost); T("orb:"+tierOrb,best.n); T("omen:"+addOmen[m.type],best.n); T("orb:annul",Math.max(0,best.n-1)); T("omen:"+annulOmen[m.type],Math.max(0,best.n-1)); }
+    const shared=present2.find(p=>p.tags.some(t=>m.tags.includes(t)));
+    const homog=shared?` Same-tag speed-up: ${omen("homog_exalt")} biases toward affixes sharing “${m.tags.find(t=>shared.tags.includes(t))}” with ${shared.name}.`:"";
+    const cmp=methodCompare(opts,tierOrb);
+    const essNote=(m===essTarget)?`<br><b>Cheapest of all:</b> a <b>Perfect Essence</b> (${m.essence}) adds <b>${m.name} guaranteed</b> in one step — your one essence use per item. Spend it here.`
+      :`<br><span style="color:var(--muted)">By expected cost: ${cmp}${(typeof PRICES==="undefined"||!PRICES.loaded)?` · <i>estimated</i>`:""}</span>`;
+    steps.push({h:`Add target: ${m.name} (${m.tierLabel})`,
+      p:`Force the open ${m.type} slot: ${omen(addOmen[m.type])} + ${orb(m===essTarget?"essence":tierOrb)} ${m===essTarget?"":`(cheapest path: ≈${best.n} tries, about <b>${costDisp(best.cost)}</b>)`}.${guarant&&m!==essTarget?` ${orb("hinekora")} previews each slam.`:""}${homog} Wrong ${m.type}? ${omen(annulOmen[m.type])} + ${orb("annul")} and retry.${essNote}`,
+      why:`The method is picked by expected cost (probability × orb/Annulment prices). ${m===essTarget?"This target has an Essence, which hard-guarantees it — almost always the cheapest.":""}`,
+      chips:[omen(addOmen[m.type]),orb(m===essTarget?"essence":tierOrb)].concat(guarant&&m!==essTarget?[orb("hinekora")]:[],[omen(annulOmen[m.type]),orb("annul")],shared?[omen("homog_exalt")]:[])});
+    present2.push(m);
+  });
+
+  cost+=COST.divine*2; T("orb:divine",3);
+  steps.push({h:"Perfect the rolls",
+    p:`Once the mods are right, ${orb("divine")} to push the numeric values up (within their tiers).`,
+    why:`Divine only re-rolls values, never the mods — safe at the end.`,
+    chips:[orb("divine")]});
+
+  const stepsHtml=steps.map((s,i)=>`<div class="step"><div class="num">${i+1}</div><div>
+    <h4>${s.h}</h4><p>${s.p}</p><div class="why">${s.why}</div>
+    ${s.chips.length?`<div class="tagline">${s.chips.join("")}</div>`:""}</div></div>`).join("");
+
+  return `<h3 style="margin:0 0 10px;color:var(--gold2)">Finish your ${base.name}</h3>
+    ${stepsHtml}
+    <div class="summary">
+      <div class="stat"><b>${junk.length}✕ / ${targets.length}＋</b><span>mods to remove / add (keeping ${keepers.length})</span></div>
+      <div class="stat"><b>~${Math.round(cost)} ex</b><span>rough currency budget to finish from here</span></div>
+    </div>
+    <p class="legend" style="margin-top:14px">The trickiest part of finishing a found item is removing a junk mod that shares a side with a keeper — Annulment can't pick which it hits. Fracture-lock keepers first, or lean on Whittling to target the lowest-tier (usually junk) roll.${essTarget?` And your single Perfect-Essence swap is best spent guaranteeing <b>${essTarget.name}</b>.`:""}</p>`;
+}
+
+/* ===================== JEWEL ENGINE ===================== */
+// Jewels cap at 2 prefix + 2 suffix (4 mods); the 5th only comes from a Vaal corruption.
+function buildJewelPlan(base, pre, suf){
+  craftTally={}; simModel={mods:[],fixed:0};
+  pre=pre.filter(m=>!m.des); suf=suf.filter(m=>!m.des);
+  const all=[...pre,...suf];
+  if(!all.length) return desOnlyIntro(base);
+  const orb=k=>`<span class="chip" data-tip="${ORBS[k].d}">${ORBS[k].e} ${ORBS[k].n}</span>`;
+  const omen=k=>`<span class="chip" data-tip="${OMENS[k].d}">🃏 ${OMENS[k].n}</span>`;
+  const ilvlReq=Math.max(...all.map(m=>m.ilvl));
+  const addOmen={prefix:"sin_exalt",suffix:"dex_exalt"};
+  const annulOmen={prefix:"sin_annul",suffix:"dex_annul"};
+  const steps=[]; let cost=0;
+
+  const ess=all.filter(m=>m.essence);
+  const anchor = ess.length ? ess.reduce((a,m)=>m.tiers[0].weight<a.tiers[0].weight?m:a) : all.reduce((a,m)=>m.tiers[0].weight<a.tiers[0].weight?m:a);
+  const remaining = all.filter(m=>m!==anchor);
+
+  steps.push({h:"Start with a white jewel",
+    p:`Get a <b>Normal (white) ${base.name}</b> at <b>item level ≥ ${ilvlReq}</b>. Jewels cap at <b>2 prefixes + 2 suffixes</b> (4 explicit mods) — a 5th only comes from Vaal corruption (last step).`,
+    why:`Jewels follow the same affix rules as gear, but with a lower cap. Item level still gates the tiers you can roll.`, chips:[]});
+
+  if(anchor.essence){
+    cost+=exPrice("Essence",6)+exPrice("Orb of Transmutation",0.4); T("orb:transmute",1); T("orb:essence",1);
+    steps.push({h:`Guarantee your key mod with an Essence`,
+      p:`${orb("transmute")} → a <b>Perfect Essence</b> (${anchor.essence}) makes it Rare with <b>${anchor.name} guaranteed</b>.`,
+      why:`One Essence mod per item — spend it on the jewel mod you most want certain.`, chips:[orb("transmute"),orb("essence")]});
+  } else {
+    cost+=exPrice("Regal Orb",1.5)+exPrice("Orb of Transmutation",0.4); T("orb:transmute",1); T("orb:regal",1);
+    steps.push({h:`Open a Rare jewel`,
+      p:`${orb("transmute")} → ${orb("regal")} to make it Rare, then add the rest below.`,
+      why:`No essence-backable target here, so open the Rare and add mods with the cheapest method per mod.`, chips:[orb("transmute"),orb("regal")]});
+  }
+
+  const jpresent=[anchor];
+  remaining.forEach(m=>{
+    const opts=methodOptions(base,m,jpresent); const best=opts[0]||{key:"exalt",n:1,cost:0}; const tierOrb=best.key, guarant=tierOrb!=="exalt";
+    cost+=best.cost; SIM(best.p,best.tryCost,best.missCost);
+    T("orb:"+tierOrb,best.n); T("omen:"+addOmen[m.type],best.n); T("orb:annul",Math.max(0,best.n-1)); T("omen:"+annulOmen[m.type],Math.max(0,best.n-1));
+    jpresent.push(m);
+    const cmp=methodCompare(opts,tierOrb);
+    steps.push({h:`Add ${m.type}: ${m.name} (${m.tierLabel})`,
+      p:`${omen(addOmen[m.type])} + ${orb(tierOrb)} to force a ${m.type}; wrong one → ${omen(annulOmen[m.type])} + ${orb("annul")} and retry. <b>Cheapest:</b> ≈${best.n} tries, about <b>${costDisp(best.cost)}</b>.${guarant?` ${orb("hinekora")} previews a slam.`:""}<br><span style="color:var(--muted)">By expected cost: ${cmp}</span>`,
+      why:`Same cost-optimized logic as gear — the orb with the lowest expected spend for this mod.`,
+      chips:[omen(addOmen[m.type]),orb(tierOrb)].concat(guarant?[orb("hinekora")]:[],[omen(annulOmen[m.type]),orb("annul")])});
+  });
+
+  cost+=exPrice("Divine Orb",375)*0.5; T("orb:divine",2);
+  steps.push({h:"Perfect the values", p:`${orb("divine")} until the numbers land where you want.`,
+    why:`Divine re-rolls the values inside the tiers you already have.`, chips:[orb("divine")]});
+
+  cost+=exPrice("Vaal Orb",3); T("orb:vaal",1);
+  steps.push({h:"🎲 Go for a 5th mod — Vaal corruption",
+    p:`This is the <b>only</b> way past 4 mods. ${orb("vaal")} your finished 4-mod jewel: one outcome <b>adds a 5th (corrupted) modifier</b> (it appears as an implicit). But Vaal is a <b>pure gamble in 0.5</b> — the Omen of Corruption that used to control it was removed — and other outcomes can re-roll, remove a mod, or do nothing. The result is <b>permanent</b>. <b>The play:</b> craft a STACK of good 4-mod jewels, Vaal them all, and keep the ones that hit a clean 5th. Never corrupt a jewel you can't afford to lose.`,
+    why:`Corruption bypasses the affix cap — the only route to a 5-mod jewel — but it's unconditional RNG now, so treat each Vaal as disposable and play the volume game.`,
+    chips:[orb("vaal")]});
+
+  const sel=all.map(m=>`<span class="chip">${m.type==="prefix"?"🟦":"🟥"} ${m.name}</span>`).join(" ");
+  const stepsHtml=steps.map((s,i)=>`<div class="step"><div class="num">${i+1}</div><div><h4>${s.h}</h4><p>${s.p}</p><div class="why">${s.why}</div>${s.chips.length?`<div class="tagline">${s.chips.join("")}</div>`:""}</div></div>`).join("");
+  return `<h3 style="margin:0 0 4px;color:var(--gold2)">Craft your ${base.name}</h3>
+    <div class="tagline" style="margin-bottom:14px">${sel}</div>
+    ${stepsHtml}
+    <div class="summary">
+      <div class="stat"><b>${all.length} of 4</b><span>explicit jewel mods (cap 2 prefix + 2 suffix)</span></div>
+      <div class="stat"><b>~${costDisp(cost)}</b><span>expected for the 4-mod base + 1 Vaal for the 5th</span></div>
+    </div>
+    <p class="legend" style="margin-top:14px">A 5-mod jewel = a clean 4-mod jewel + a lucky Vaal. Since corruption can't be controlled in 0.5, the realistic path is volume: make several, corrupt them all, keep the winners.</p>`;
+}
+
+/* ===================== DESECRATION / WELL OF SOULS (woven into every plan) ===================== */
+// Abyss crafting: desecrate a Rare item with a bone, then reveal a powerful desecrated
+// modifier (1 of 3) at the Well of Souls. Appended to every craft as an available technique.
+function desPrice(name){
+  if(typeof PRICES==="undefined" || !PRICES.loaded) return "";
+  const ex=PRICES.byName[name]; if(ex==null) return "";
+  const cur=PRICES.display, rate=cur==="exalted"?1:(PRICES.rates&&PRICES.rates[cur]); if(!rate) return "";
+  const a=ex/rate, u=cur==="divine"?"div":cur==="exalted"?"ex":"c";
+  return ` <span class="price">≈ ${a<10?a.toFixed(1):Math.round(a).toLocaleString()} ${u}</span>`;
+}
+const FAC_KEY={Amanamu:"amanamu",Ulaman:"ulaman",Kurgal:"kurgal"};
+function desecrationSection(base, desTargets){
+  if(!base) return "";
+  desTargets = desTargets || [];
+  const omen=k=>`<span class="chip" data-tip="${OMENS[k].d}">🃏 ${OMENS[k].n}</span>`;
+  const sk=base.jewel ? "jewel" : slotKeyOf(base.name), bn=BONES[sk];
+  const boneName=`Preserved ${bn.bone}`;
+  const bone=`<span class="chip" data-tip="${BONE_TIERS.Preserved} — desecrates a Rare ${bn.slot}">🦴 ${boneName}</span>`;
+  const recFac = sk==="armour" ? "amanamu" : "ulaman";   // best-matching pool for this slot
+  const recOmen = FACTIONS[recFac].omen;
+
+  // Specific desecrated TARGETS the user picked — list them + tally the currency into the shopping list.
+  let targetBlock="";
+  if(desTargets.length){
+    T("bone:"+boneName, desTargets.length);
+    T("omen:ab_echoes", desTargets.length*2);
+    if(desTargets.length>1) T("omen:ab_light", desTargets.length-1);
+    const facsUsed=new Set();
+    const rows=desTargets.map(m=>{
+      const fk=FAC_KEY[m.faction]; if(fk) facsUsed.add(fk);
+      const fomen = fk ? FACTIONS[fk].omen : null;
+      return `<li><b>${m.name}</b> <span class="despill">🦴 ${m.faction||"desecrated"}</span> ${fomen?`→ reveal with ${omen(fomen)}`:`→ any pool (no faction omen)`}</li>`;
+    }).join("");
+    facsUsed.forEach(fk=>{ if(FACTIONS[fk].omen) T("omen:"+FACTIONS[fk].omen, 1); });
+    targetBlock=`<p class="legend" style="margin:0 0 6px">Your <b>${desTargets.length}</b> desecrated target${desTargets.length>1?"s":""} — chase ${desTargets.length>1?"each":"it"} at the Well (reveal → reroll with Abyssal Echoes → pick; Omen of Light to clear and go again for the next):</p>
+      <ul class="destargets">${rows}</ul>`;
+  }
+
+  const boneRows=Object.values(BONES).map(x=>{
+    const me=x.bone===bn.bone;
+    return `<tr${me?' class="hl"':''}><td>🦴 ${x.bone}${me?desPrice("Preserved "+x.bone):""}</td><td>${x.slot}${me?" ← your item":""}</td></tr>`;
+  }).join("");
+  const facRows=Object.keys(FACTIONS).filter(k=>FACTIONS[k].omen).map(k=>{
+    const me=k===recFac;
+    return `<tr${me?' class="hl"':''}><td>${omen(FACTIONS[k].omen)}${desPrice(OMENS[FACTIONS[k].omen].n)}</td><td>${FACTIONS[k].name} — ${FACTIONS[k].desc}${me?' <b style="color:var(--gold2)">· best for this slot</b>':''}</td></tr>`;
+  }).join("");
+  return `<div class="desblock">
+    <h3>🦴 Desecration — ${desTargets.length?`your ${desTargets.length} desecrated target${desTargets.length>1?"s":""}`:"add a mod the normal pool can't roll"}</h3>
+    ${targetBlock}
+    <p class="legend" style="margin:0 0 8px">Desecrated mods can't come from Exalts, Essences or any normal craft. For your <b>${base.name}</b> (${bn.slot}) use a ${bone}${desPrice(boneName)} at the <b>Well of Souls</b>:</p>
+    <ol class="dessteps">
+      <li>Make the item <b>Rare, ilvl 65+</b>, and <b>leave one affix slot open</b> — a full item loses a random mod to the bone.</li>
+      <li>Want a theme? Bias the reveal first: ${omen(recOmen)}${desPrice(OMENS[recOmen].n)} for this slot (it blocks the other two pools).</li>
+      <li>Apply the bone → <b>Well of Souls</b> → <b>Reveal</b> → choose <b>1 of 3</b> (permanent).</li>
+      <li>All three junk? ${omen("ab_echoes")}${desPrice("Omen of Abyssal Echoes")} rerolls the trio. Need another desecrated mod, or got a dud? ${omen("ab_light")}${desPrice("Omen of Light")} clears one so you can desecrate again.</li>
+    </ol>
+    <div class="desref">
+      <table><tbody>${boneRows}</tbody></table>
+      <table style="margin-top:8px"><tbody>${facRows}</tbody></table>
+    </div>
+    <p class="legend" style="margin-top:8px">Bone tiers: Gnawed (ilvl ≤64) · Preserved (any) · Ancient (ilvl 75+, guarantees a higher mod level). Prices ${typeof PRICES!=="undefined"&&PRICES.loaded?`live from poe2scout · ${PRICES.league}`:`appear once you load prices`}.</p>
+  </div>`;
+}
+</script>
+</body>
+</html>

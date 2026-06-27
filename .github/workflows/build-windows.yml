@@ -1,0 +1,58 @@
+name: Build Windows app
+
+# Builds the Windows .exe on a cloud Windows runner — produces the single-file
+# portable .exe (which can't be built on an Apple-Silicon Mac). Runs automatically
+# on every push to main, and on demand via the "Run workflow" button.
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "README.md"
+      - ".gitignore"
+  workflow_dispatch:
+
+permissions:
+  contents: write          # needed to publish the GitHub Release
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build portable Windows .exe
+        run: npm run dist        # electron-builder --win portable
+
+      - name: Read version
+        id: ver
+        shell: bash
+        run: echo "v=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the .exe (artifact)
+        uses: actions/upload-artifact@v7
+        with:
+          name: PoE2-Craft-Planner-windows
+          path: dist/*.exe
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.v }}
+          name: PoE2 Craft Planner v${{ steps.ver.outputs.v }}
+          files: dist/*.exe
+          make_latest: true
+          body: |
+            Latest build of the PoE2 Craft Planner. Download **PoE2-Craft-Planner.exe** below.
+            (Hardware-locked — you'll need a key from the owner to activate.)
+      # Keygen lives in its own private repo (Almighty1g/poe2-keygen) — built + released separately.

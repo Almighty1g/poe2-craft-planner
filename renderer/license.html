@@ -1,0 +1,77 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>PoE2 Craft Planner — Activate</title>
+<style>
+  :root{--gold:#c9a24b;--gold2:#e6c878;--line:#2a2118;--muted:#8a7c63;--txt:#e9ddc7;--green:#7bbf6a;--red:#d06a5a}
+  *{box-sizing:border-box}
+  body{margin:0;background:#0e0b07;color:var(--txt);font:15px/1.5 "Segoe UI",system-ui,sans-serif;
+    display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+  .card{max-width:560px;width:100%;background:#15100a;border:1px solid var(--line);border-radius:14px;padding:30px 32px;
+    box-shadow:0 18px 50px rgba(0,0,0,.5)}
+  h1{margin:0 0 4px;font-size:22px;color:var(--gold2)}
+  .sub{color:var(--muted);font-size:13.5px;margin-bottom:22px}
+  label{display:block;font-size:12.5px;color:var(--gold2);text-transform:uppercase;letter-spacing:.04em;margin:18px 0 6px}
+  .hwid{display:flex;gap:8px}
+  .hwid input{flex:1;font-family:ui-monospace,Consolas,monospace;font-size:15px;letter-spacing:1px;
+    background:#0e0b07;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:11px 12px}
+  textarea{width:100%;min-height:78px;background:#0e0b07;color:var(--txt);border:1px solid var(--line);border-radius:8px;
+    padding:11px 12px;font-family:ui-monospace,Consolas,monospace;font-size:13px;resize:vertical}
+  textarea:focus,.hwid input:focus{outline:none;border-color:var(--gold)}
+  button{background:linear-gradient(180deg,var(--gold2),var(--gold));color:#241a08;border:0;border-radius:8px;
+    padding:11px 18px;font-weight:700;font-size:14px;cursor:pointer}
+  button.ghost{background:#1a130a;color:var(--gold2);border:1px solid var(--line);font-weight:600}
+  .row{display:flex;gap:10px;align-items:center;margin-top:16px}
+  .msg{font-size:13.5px;margin-top:12px;min-height:18px}
+  .msg.ok{color:var(--green)} .msg.err{color:var(--red)}
+  .note{margin-top:22px;font-size:12.5px;color:var(--muted);background:#120d07;border:1px solid var(--line);
+    border-left:3px solid var(--gold);border-radius:8px;padding:11px 13px}
+  .hammer{font-size:30px;margin-bottom:6px}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="hammer">🔨</div>
+    <h1>Activate PoE2 Craft Planner</h1>
+    <div class="sub">This copy is locked to your machine. Send your Hardware ID to get a key.</div>
+
+    <label>1 · Your Hardware ID</label>
+    <div class="hwid">
+      <input id="hwid" readonly value="…">
+      <button class="ghost" id="copy">Copy</button>
+    </div>
+
+    <label>2 · Paste your key</label>
+    <textarea id="key" placeholder="paste the key you were given…" autocomplete="off" spellcheck="false"></textarea>
+
+    <div class="row">
+      <button id="activate">Activate →</button>
+      <span class="msg" id="msg"></span>
+    </div>
+
+    <div class="note">Send your Hardware ID (above) to the owner. They'll generate a key that works <b>only on this machine</b>. Keys aren't transferable — sharing this app with the key won't unlock it on another PC.</div>
+  </div>
+
+<script>
+  const $=s=>document.querySelector(s);
+  (async()=>{ try{ $("#hwid").value = await window.license.hwid(); }catch(e){ $("#hwid").value="unavailable"; } })();
+
+  $("#copy").addEventListener("click",async()=>{
+    const t=$("#hwid").value;
+    try{ await navigator.clipboard.writeText(t); }catch(e){ $("#hwid").select(); document.execCommand("copy"); }
+    $("#copy").textContent="Copied ✓"; setTimeout(()=>$("#copy").textContent="Copy",1500);
+  });
+
+  async function tryActivate(){
+    const key=$("#key").value.trim(); const msg=$("#msg");
+    if(!key){ msg.textContent="Paste your key first."; msg.className="msg err"; return; }
+    msg.textContent="Checking…"; msg.className="msg";
+    const ok = await window.license.activate(key);   // on success, main swaps to the planner
+    if(!ok){ msg.textContent="That key isn't valid for this machine."; msg.className="msg err"; }
+  }
+  $("#activate").addEventListener("click",tryActivate);
+  $("#key").addEventListener("keydown",e=>{ if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)) tryActivate(); });
+</script>
+</body>
+</html>

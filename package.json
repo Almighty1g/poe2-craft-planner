@@ -1,0 +1,43 @@
+{
+  "name": "poe2-craft-planner",
+  "version": "1.4.0",
+  "description": "Path of Exile 2 crafting recipe planner (patch 0.5.x) — pick the mods you want, get the orb + omen recipe.",
+  "main": "main.js",
+  "author": "L. P. McCue",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable",
+    "dist:installer": "electron-builder --win nsis",
+    "dist:dir": "electron-builder --win --dir",
+    "refresh-data": "python3 build_data.py"
+  },
+  "build": {
+    "appId": "com.lpmccue.poe2craftplanner",
+    "productName": "PoE2 Craft Planner",
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        "portable"
+      ]
+    },
+    "portable": {
+      "artifactName": "PoE2-Craft-Planner.exe"
+    }
+  },
+  "dependencies": {
+    "node-machine-id": "^1.1.12"
+  },
+  "devDependencies": {
+    "electron": "^42.5.0",
+    "electron-builder": "^26.15.3"
+  }
+}
