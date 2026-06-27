@@ -92,6 +92,17 @@
     display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13.5px}
   #updbar b{color:var(--gold2)} #updbar a{cursor:pointer;text-decoration:underline}
   #updbar .x{margin-left:auto;cursor:pointer;color:var(--muted)}
+  .itempreview{max-width:460px;margin:0 auto 18px;background:#0a0908;border:1px solid #4a4133;border-radius:4px;
+    overflow:hidden;box-shadow:0 8px 26px rgba(0,0,0,.55)}
+  .ip-head{background:linear-gradient(180deg,#2b2620,#191510);text-align:center;padding:8px 10px;border-bottom:1px solid #4a4133}
+  .ip-name{color:#ffff77;font-size:16px;font-weight:700;letter-spacing:.4px;text-shadow:0 1px 2px #000}
+  .ip-base{color:#ffec8a;font-size:13.5px}
+  .ip-body{padding:11px 14px;text-align:center;background:radial-gradient(120% 80% at 50% 0%,#16120c,#0a0908)}
+  .ip-mod{color:#8a8aff;font-size:13.5px;line-height:1.55}
+  .ip-val{color:#b8b8ff;font-weight:600}
+  .ip-des{color:#c69bff} .ip-des .ip-val{color:#dcc4ff}
+  .ip-tag{font-size:10px;color:#9a78d6;border:1px solid #5a4a86;border-radius:10px;padding:0 6px;vertical-align:middle}
+  .ip-corrupt{color:#d35a48;margin-top:7px;font-size:12.5px}
   .desref table{width:100%;border-collapse:collapse;font-size:12.5px}
   .desref td{padding:5px 8px;border-top:1px solid var(--line);color:var(--muted);vertical-align:middle}
   .desref tr.hl td{background:#1d1430;color:var(--txt)}
@@ -542,10 +553,10 @@ function selectedFinish(){
   return rows;
 }
 
-let lastBase=null, lastDesTargets=[];   // remembered for the desecration section appended to every plan
+let lastBase=null, lastDesTargets=[], lastItemMods=[];   // remembered for the item preview + desecration section
 $("#go").addEventListener("click",()=>{
   const b=BASES[baseSel.value];
-  lastBase=b; lastDesTargets=[];
+  lastBase=b; lastDesTargets=[]; lastItemMods=[];
   warn.textContent="";
 
   if(mode==="finish"){
@@ -558,6 +569,7 @@ $("#go").addEventListener("click",()=>{
     if(cnt(keepers,"prefix")+cnt(targets,"prefix")>3){warn.textContent="Keepers + target prefixes exceed 3 — remove or drop a prefix.";return;}
     if(cnt(keepers,"suffix")+cnt(targets,"suffix")>3){warn.textContent="Keepers + target suffixes exceed 3 — remove or drop a suffix.";return;}
     lastDesTargets=targets.filter(m=>m.des);
+    lastItemMods=[...keepers,...targets];   // the finished item = kept mods + added targets
     renderPlan(buildFinishPlan(b,keepers,junk,targets)); return;
   }
 
@@ -568,6 +580,7 @@ $("#go").addEventListener("click",()=>{
   if(pre.length>cap){warn.textContent=`A ${mode==="jewel"?"jewel":"Rare item"} can have at most ${cap} prefixes${mode==="jewel"?" (5th mod comes from Vaal corruption)":""}.`;return;}
   if(suf.length>cap){warn.textContent=`A ${mode==="jewel"?"jewel":"Rare item"} can have at most ${cap} suffixes${mode==="jewel"?" (5th mod comes from Vaal corruption)":""}.`;return;}
   lastDesTargets=sel.filter(m=>m.des);
+  lastItemMods=sel;
   renderPlan(mode==="perfect" ? buildPerfectPlan(b,pre,suf) : mode==="jewel" ? buildJewelPlan(b,pre,suf) : buildPlan(b,pre,suf));
 });
 
@@ -670,11 +683,29 @@ function attachShareHandlers(){
   if(cs)cs.onclick=()=>{copyText(planToText()); if(msg){msg.textContent="Steps copied ✓"; setTimeout(()=>msg.textContent="",2200);}};
   if(cc)cc.onclick=()=>{copyText(craftCode()); if(msg){msg.textContent="Craft code copied ✓ — paste it in someone's Import box"; setTimeout(()=>msg.textContent="",3500);}};
 }
+
+// Item preview — render the finished item as a PoE-style tooltip (screenshot-friendly).
+const RARE_PRE=["Dread","Brood","Storm","Gloom","Cinder","Hate","Doom","Soul","Blood","Rift","Wraith","Viper","Dragon","Pain","Grim","Carrion","Morbid","Vortex","Glyph","Ghoul","Behemoth","Maelstrom","Havoc","Phoenix","Onslaught","Eagle"];
+const RARE_SUF=["Veil","Edge","Bane","Husk","Whisper","Shroud","Talon","Mark","Knot","Coil","Grasp","Guard","Spire","Cry","Gnarl","Roar","Thirst","Song","Brand","Wing","Shackle","Crest","Pledge","Vow","Sworn","Bite","Glare"];
+function rareName(){ return RARE_PRE[Math.random()*RARE_PRE.length|0]+" "+RARE_SUF[Math.random()*RARE_SUF.length|0]; }
+function itemPreviewHTML(base, mods){
+  if(!base || !mods || !mods.length) return "";
+  const hl=s=>String(s).replace(/(\d+(?:\.\d+)?)/g,'<span class="ip-val">$1</span>');
+  const line=m=>`<div class="ip-mod${m.des?" ip-des":""}">${hl(m.name)}${m.des?` <span class="ip-tag">${m.faction||"desecrated"}</span>`:""}</div>`;
+  const pre=mods.filter(m=>m.type==="prefix"), suf=mods.filter(m=>m.type==="suffix");
+  const rows=[...pre,...suf].map(line).join("");
+  const jewelNote = base.jewel ? `<div class="ip-corrupt">+1 more possible via Vaal corruption</div>` : "";
+  return `<div class="itempreview">
+    <div class="ip-head"><div class="ip-name">${rareName()}</div><div class="ip-base">${base.name}</div></div>
+    <div class="ip-body">${rows}${jewelNote}</div>
+  </div>`;
+}
 function renderPlan(html){
   out.innerHTML=`<div class="sharebar"><button class="btn sm" id="copysteps">📋 Copy steps</button>`+
     `<button class="btn sm ghost" id="copycode">🔗 Copy craft code</button>`+
     `<button class="btn sm ghost" id="simbtn">🎲 Simulate 10k</button>`+
-    `<span class="copymsg" id="copymsg"></span></div>`+html+`<div id="simout"></div>`+
+    `<span class="copymsg" id="copymsg"></span></div>`+
+    itemPreviewHTML(lastBase,lastItemMods)+html+`<div id="simout"></div>`+
     desecrationSection(lastBase,lastDesTargets)+shoppingListHTML();
   out.style.display="block";
   out.scrollIntoView({behavior:"smooth",block:"start"});
