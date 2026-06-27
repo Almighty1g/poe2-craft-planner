@@ -51,7 +51,7 @@ ipcMain.handle("license:activate", (e, key) => {
 /* ===================== UPDATE CHECK ===================== */
 // On launch the app checks a public version manifest (a gist) and notifies if a newer
 // build exists. No silent self-update (repo is private + app is licensed) — just a heads-up.
-const APP_VERSION = "1.5.0";
+const APP_VERSION = "1.5.1";
 const UPDATE_MANIFEST = "https://gist.githubusercontent.com/Almighty1g/21f993e8c717759eae0713e1817f3f5d/raw/poe2-planner-version.json";
 function cmpVer(a, b) {
   const pa = String(a).split(".").map(Number), pb = String(b).split(".").map(Number);

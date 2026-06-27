@@ -1,6 +1,6 @@
 {
   "name": "poe2-craft-planner",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Path of Exile 2 crafting recipe planner (patch 0.5.x) — pick the mods you want, get the orb + omen recipe.",
   "main": "main.js",
   "author": "L. P. McCue",

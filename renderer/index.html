@@ -98,7 +98,8 @@
   .ip-name{color:#ffff77;font-size:16px;font-weight:700;letter-spacing:.4px;text-shadow:0 1px 2px #000}
   .ip-base{color:#ffec8a;font-size:13.5px}
   .ip-body{padding:11px 14px;text-align:center;background:radial-gradient(120% 80% at 50% 0%,#16120c,#0a0908)}
-  .ip-mod{color:#8a8aff;font-size:13.5px;line-height:1.55}
+  .ip-mod{color:#8a8aff;font-size:13.5px;line-height:1.55;position:relative;padding:0 30px}
+  .ip-tier{position:absolute;right:2px;top:50%;transform:translateY(-50%);color:var(--gold2);font-size:11px;font-weight:700;letter-spacing:.3px}
   .ip-val{color:#b8b8ff;font-weight:600}
   .ip-des{color:#c69bff} .ip-des .ip-val{color:#dcc4ff}
   .ip-tag{font-size:10px;color:#9a78d6;border:1px solid #5a4a86;border-radius:10px;padding:0 6px;vertical-align:middle}
@@ -691,7 +692,7 @@ function rareName(){ return RARE_PRE[Math.random()*RARE_PRE.length|0]+" "+RARE_S
 function itemPreviewHTML(base, mods){
   if(!base || !mods || !mods.length) return "";
   const hl=s=>String(s).replace(/(\d+(?:\.\d+)?)/g,'<span class="ip-val">$1</span>');
-  const line=m=>`<div class="ip-mod${m.des?" ip-des":""}">${hl(m.name)}${m.des?` <span class="ip-tag">${m.faction||"desecrated"}</span>`:""}</div>`;
+  const line=m=>`<div class="ip-mod${m.des?" ip-des":""}"><span class="ip-text">${hl(m.name)}${m.des?` <span class="ip-tag">${m.faction||"desecrated"}</span>`:""}</span>${m.tierLabel?`<span class="ip-tier">${m.tierLabel}</span>`:""}</div>`;
   const pre=mods.filter(m=>m.type==="prefix"), suf=mods.filter(m=>m.type==="suffix");
   const rows=[...pre,...suf].map(line).join("");
   const jewelNote = base.jewel ? `<div class="ip-corrupt">+1 more possible via Vaal corruption</div>` : "";
