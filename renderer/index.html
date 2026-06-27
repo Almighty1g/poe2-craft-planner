@@ -71,6 +71,8 @@
   .destargets li{margin:5px 0;font-size:13.5px;color:var(--txt)}
   .despill{display:inline-block;font-size:10px;color:#e9dcff;background:#6a4bb3;border-radius:20px;padding:1px 7px;margin-left:6px;vertical-align:middle}
   .mod.desmod{border-left:2px solid #6a4bb3}
+  .mod.conflict{opacity:.4;background:#170f0d}
+  .mod.conflict .mt::after{content:" · same group as a picked mod";color:var(--red);font-size:10px;font-style:italic}
   .refwrap{grid-column:1 / -1}
   .refsec{margin-bottom:16px}
   .refsec h3{margin:0 0 6px;color:var(--gold2);font-size:15px}
@@ -404,8 +406,9 @@ function renderMods(){
   const row=m=>{
     const sc=(m.name+" "+m.tags.join(" ")+(m.des?" desecrated "+(m.faction||""):"")).toLowerCase();
     const pills=`${m.essence?`<span class="pill">essence</span>`:""}${m.des?`<span class="despill">🦴 ${m.faction||"desecrated"}</span>`:""}`;
+    const dattr=`data-search="${sc}" data-id="${m.id}" data-group="${m.group||""}"`;
     if(finish){
-      return `<div class="mod${m.des?" desmod":""}" data-search="${sc}"><div class="modbody">
+      return `<div class="mod${m.des?" desmod":""}" ${dattr}><div class="modbody">
         <label class="mt">${m.name}${pills}</label>
         <div class="finishrow">
           <select class="rolesel" data-id="${m.id}" title="is this mod on your item, or a target to add?">
@@ -416,7 +419,7 @@ function renderMods(){
           </select>${tierSelHtml(m,"tier (used when adding)")}
         </div></div></div>`;
     }
-    return `<div class="mod${m.des?" desmod":""}" data-search="${sc}"><input type="checkbox" id="cb_${m.id}" data-id="${m.id}">
+    return `<div class="mod${m.des?" desmod":""}" ${dattr}><input type="checkbox" id="cb_${m.id}" data-id="${m.id}">
       <div class="modbody">
         <label for="cb_${m.id}" class="mt">${m.name}${pills}</label>
         ${perfect
@@ -429,6 +432,7 @@ function renderMods(){
     arr.map(row).join("")+`</div>`;
   modcols.innerHTML=col("Prefixes",pre)+col("Suffixes",suf);
   applyFilter();   // re-apply any active search after a re-render (base/mode change)
+  updateConflicts();
   warn.textContent="";out.style.display="none";
 }
 baseSel.addEventListener("change",renderMods);
@@ -465,6 +469,27 @@ function applyFilter(){
 }
 $("#modsearch").addEventListener("input",applyFilter);
 
+// Mod-group conflict awareness — mods sharing a "group" can't coexist; grey-out/disable the rest.
+function isPicked(row){
+  const cb=row.querySelector('input[type=checkbox]'), rs=row.querySelector('select.rolesel');
+  return (cb && cb.checked) || (rs && rs.value!=="none");
+}
+function updateConflicts(){
+  const taken={};   // group → id of the mod that already claimed it (first one wins)
+  modcols.querySelectorAll(".mod").forEach(row=>{
+    const g=row.dataset.group; if(g && isPicked(row) && !taken[g]) taken[g]=row.dataset.id;
+  });
+  modcols.querySelectorAll(".mod").forEach(row=>{
+    const g=row.dataset.group, picked=isPicked(row);
+    const conflict = !!(g && taken[g] && taken[g]!==row.dataset.id);
+    row.classList.toggle("conflict", conflict);
+    const cb=row.querySelector('input[type=checkbox]'), rs=row.querySelector('select.rolesel');
+    if(cb) cb.disabled = conflict && !picked;   // block picking a 2nd of the group; still allow unpicking
+    if(rs) rs.disabled = conflict && !picked;
+  });
+}
+modcols.addEventListener("change",updateConflicts);
+
 // Paste-an-item import — parse pasted item text and auto-select the matching mods (+ tiers).
 function normMod(s){ return s.replace(/\d+(\.\d+)?/g,"#").replace(/\s+/g," ").trim().toLowerCase(); }
 function bestTierFor(m,val){
@@ -492,6 +517,7 @@ function importItemText(text){
       if(num!=null){ const ti=bestTierFor(m,+num); const ts=modcols.querySelector(`select.tiersel[data-id="${m.id}"]`); if(ts&&ti>=0) ts.value=ti; }
     }
   });
+  updateConflicts();
   return matched;
 }
 $("#pasteitembtn").addEventListener("click",()=>{ const pb=$("#pastebox"); const show=pb.style.display==="none"; pb.style.display=show?"block":"none"; if(show)$("#pasteitem").focus(); });
@@ -530,7 +556,7 @@ function flatten(mod,ti){
   return {id:mod.id, type:mod.type, tags:mod.tags, essence:mod.essence,
           name:tier.val, weight:tier.weight, ilvl:tier.ilvl,
           tierLabel:tier.t, tierIdx:ti, tiers:mod.tiers,
-          des:!!mod.des, faction:mod.faction||null};
+          des:!!mod.des, faction:mod.faction||null, group:mod.group||null};
 }
 
 function selected(){
@@ -554,6 +580,12 @@ function selectedFinish(){
   return rows;
 }
 
+// Two mods sharing a group can't be on one item — return the offending pair (or null).
+function findConflict(mods){
+  const seen={};
+  for(const m of mods){ if(!m.group) continue; const k=m.type+"|"+m.group; if(seen[k]) return [seen[k],m]; seen[k]=m; }
+  return null;
+}
 let lastBase=null, lastDesTargets=[], lastItemMods=[];   // remembered for the item preview + desecration section
 $("#go").addEventListener("click",()=>{
   const b=BASES[baseSel.value];
@@ -569,6 +601,8 @@ $("#go").addEventListener("click",()=>{
     if(cnt([...keepers,...junk],"suffix")>3){warn.textContent="Your item can't already have more than 3 suffixes.";return;}
     if(cnt(keepers,"prefix")+cnt(targets,"prefix")>3){warn.textContent="Keepers + target prefixes exceed 3 — remove or drop a prefix.";return;}
     if(cnt(keepers,"suffix")+cnt(targets,"suffix")>3){warn.textContent="Keepers + target suffixes exceed 3 — remove or drop a suffix.";return;}
+    const cf=findConflict([...keepers,...junk,...targets]);
+    if(cf){warn.textContent=`“${cf[0].name}” and “${cf[1].name}” are the same mod group — they can't be on one item. Pick one.`;return;}
     lastDesTargets=targets.filter(m=>m.des);
     lastItemMods=[...keepers,...targets];   // the finished item = kept mods + added targets
     renderPlan(buildFinishPlan(b,keepers,junk,targets)); return;
@@ -580,6 +614,8 @@ $("#go").addEventListener("click",()=>{
   if(!sel.length){warn.textContent="Pick at least one modifier you want on the finished item.";return;}
   if(pre.length>cap){warn.textContent=`A ${mode==="jewel"?"jewel":"Rare item"} can have at most ${cap} prefixes${mode==="jewel"?" (5th mod comes from Vaal corruption)":""}.`;return;}
   if(suf.length>cap){warn.textContent=`A ${mode==="jewel"?"jewel":"Rare item"} can have at most ${cap} suffixes${mode==="jewel"?" (5th mod comes from Vaal corruption)":""}.`;return;}
+  const cf=findConflict(sel);
+  if(cf){warn.textContent=`“${cf[0].name}” and “${cf[1].name}” are the same mod group — they can't be on one item. Pick one.`;return;}
   lastDesTargets=sel.filter(m=>m.des);
   lastItemMods=sel;
   renderPlan(mode==="perfect" ? buildPerfectPlan(b,pre,suf) : mode==="jewel" ? buildJewelPlan(b,pre,suf) : buildPlan(b,pre,suf));
@@ -620,6 +656,7 @@ function applyCraft(c){
     }
     const ts=modcols.querySelector(`select.tiersel[data-id="${p.id}"]`); if(ts&&p.ti!=null)ts.value=p.ti;
   });
+  updateConflicts();
   return true;
 }
 
@@ -792,9 +829,10 @@ function costDisp(ex){
 }
 // Returns orb method options sorted cheapest-first for adding mod m at its chosen tier (or better).
 function methodOptions(base, m, present){
-  // Mods already on the item can't re-roll, so they leave the pool — sharper odds for later mods.
-  const skip=new Set((present||[]).filter(p=>p && p.type===m.type && p.id!==m.id).map(p=>p.id));
-  const sideMods=base.mods.filter(x=>x.type===m.type && !x.des && !skip.has(x.id));
+  // Mods already on the item — and anything in the same mod GROUP — can't roll, so they leave the pool.
+  const skipIds=new Set(), skipGroups=new Set();
+  (present||[]).filter(p=>p && p.type===m.type && p.id!==m.id).forEach(p=>{ skipIds.add(p.id); if(p.group) skipGroups.add(p.group); });
+  const sideMods=base.mods.filter(x=>x.type===m.type && !x.des && !skipIds.has(x.id) && !(x.group && x.id!==m.id && skipGroups.has(x.group)));
   const tgt=m.tierIdx;
   const poolW=min=>{let s=0;sideMods.forEach(x=>x.tiers.forEach(t=>{if(t.ilvl>=min)s+=t.weight;}));return s;};
   const succW=min=>{let s=0;m.tiers.forEach((t,i)=>{if(i<=tgt && t.ilvl>=min)s+=t.weight;});return s;};

@@ -90,7 +90,9 @@ def build(d):
             seen.add(mid)
             mtids = (m.get("mtypes") or "").split("|")
             tags = [mtype_name.get(t, "").lower() for t in mtids if t in mtype_name]
-            entry = {"id": mid, "name": m["name_modifier"], "type": m["affix"],
+            try: fam = (json.loads(m.get("modgroups") or "[]") or [None])[0]
+            except Exception: fam = None
+            entry = {"id": mid, "name": m["name_modifier"], "type": m["affix"], "group": fam,
                      "tags": tags, "essence": essmap.get((bid, str(mid))), "tiers": tiers_out}
             if m.get("id_mgroup") == DESEC_MGROUP:           # desecrated (Well of Souls) mod
                 entry["des"] = True
@@ -155,7 +157,8 @@ def fetch_timeless():
                 val = _clean_tl(m.get("str", ""))
                 if not val: continue
                 typ = "prefix" if str(m.get("ModGenerationTypeID")) == "1" else "suffix"
-                mlist.append({"id": f"{slug}_{i}", "name": val, "type": typ, "tags": [],
+                fam = (m.get("ModFamilyList") or [None])[0]
+                mlist.append({"id": f"{slug}_{i}", "name": val, "type": typ, "tags": [], "group": fam,
                               "essence": None, "jewel": True,
                               "tiers": [{"t": "T1", "ilvl": ai(m.get("Level")),
                                          "weight": max(1, ai(m.get("DropChance"))), "val": val}]})
